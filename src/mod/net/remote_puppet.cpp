@@ -30,6 +30,7 @@
 #include "mod/net/horse_diag.h"
 #include "common/keys.h"
 #include "mod/net/local_capture.h"
+#include "mod/puppet/visibility.h"
 
 namespace cdmp::net {
 namespace {
@@ -1935,6 +1936,7 @@ std::string rope_slot_text(uint32_t key) {
 
 void puppet_tick() {
     horse_diag_tick();
+    puppet::visibility_tick(kPuppetPlayer);
     {
         static uint64_t timing_at = 0;
         if (steady_ms() - timing_at >= 10000) {

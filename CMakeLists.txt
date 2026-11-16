@@ -97,6 +97,7 @@ add_library(cdmp_mod SHARED
     src/mod/net/local_capture.cpp
     src/mod/net/remote_puppet.cpp
     src/mod/net/puppet_minimap.cpp
+    src/mod/puppet/visibility.cpp
     src/mod/net/horse_diag.cpp
     src/mod/net/aggro_test.cpp
     src/mod/net/enemy_relay.cpp
