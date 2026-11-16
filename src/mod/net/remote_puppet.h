@@ -35,7 +35,7 @@ bool puppet_take_reload_request();
 void puppet_request_reload();
 // A copy of one of the sender's enemies (enemy_relay.h): its load, keys
 // already translated, moved by the puppet offset, plus its recent actions
-// (n x 725-byte StartActionReq, oldest first) queued right behind it. Network thread.
+// (n x 729-byte StartActionReq, oldest first) queued right behind it. Network thread.
 bool puppet_spawn_enemy(uint32_t copy_key, std::vector<uint8_t> load, std::vector<uint8_t> action_req);
 // Moves / animates such a copy (network thread): a still sample where the
 // enemy stands (built on the other player's last Move) or one of its

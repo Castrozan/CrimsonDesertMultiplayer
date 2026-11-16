@@ -53,8 +53,8 @@ enum class Type : uint8_t {
 // actor key. The receiver turns it into the matching Ack for its copy of the
 // sender. Formats: docs/research/mirror-ack-formats.md.
 enum class EventKind : uint8_t {
-    Move = 1,         // MoveActorReq, 514 bytes
-    StartAction = 2,  // StartActionReq, 725 bytes
+    Move = 1,         // MoveActorReq, 518 bytes
+    StartAction = 2,  // StartActionReq, 729 bytes
     Rotate = 3,       // RotateActorReq, 176 bytes
     WallUp = 4,       // UpdateWallUpData, 132 bytes (built from memory)
     Equip = 5,        // OtherEquipItemAck payload (9 + 6n bytes); sent reliably
