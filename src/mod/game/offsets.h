@@ -48,7 +48,7 @@ inline constexpr uint32_t kComponents_Status = 0x20;
 inline constexpr uint32_t kComponents_CharacterControl = 0x40;
 // ClientCharacterControlActorComponent -> physics object
 inline constexpr uint32_t kControl_Inner = 0x140;
-inline constexpr uint32_t kControlInner_Physics = 0x2C0;
+inline constexpr uint32_t kControlInner_Physics = 0x2D0;
 // Physics object: rows are the local X/Y/Z axes, then the chunk-local position.
 inline constexpr uint32_t kPhysics_AxisX = 0x60;
 inline constexpr uint32_t kPhysics_AxisY = 0x70;
@@ -72,7 +72,7 @@ inline constexpr uint32_t kMaxStatEntries = 64;  // sanity bound
 // Camera (CrimsonDesertTelemetry layout; vtable and sentinel checked live).
 inline constexpr uintptr_t kCameraSlot = 0x71602A8;
 inline constexpr uintptr_t kVtCamera = 0x6169B58;
-inline constexpr uint32_t kCamera_Block = 0x428;
+inline constexpr uint32_t kCamera_Block = 0x430;
 inline constexpr uint32_t kCameraBlock_Position = 0x80;
 inline constexpr uint32_t kCameraBlock_Forward = 0x90;
 inline constexpr uint32_t kCameraBlock_View = 0x3E0;
@@ -129,7 +129,7 @@ inline constexpr uint8_t kPinShapeCount = 14, kPinColourCount = 15;
 
 // Minimap icon of an actor (mapa-minimapa.md §2, §4): 0xB24A10(minimap
 // component, u16* icon, u16* sub icon, u8* a, u8* b), void; component +0x08 =
-// actor. Icon keys come from a table of u16 at [[[[exe+root]]+8]+0x270].
+// actor. Icon keys come from a table of u16 at [[[[exe+root]]+8]+0x250].
 inline constexpr uintptr_t kMinimapIconDecide = 0xB24A10;
 inline constexpr uint8_t kMinimapIconDecideHead[] = {0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x74,
                                                      0x24, 0x10, 0x48, 0x89, 0x7C, 0x24, 0x18, 0x55};

@@ -161,7 +161,7 @@ uint32_t actor_key_of(const void* comp) {
     }
 }
 
-// cfg = [[[[exe+0x7245558]]+8]+0x270], a table of u16 UIMapIconKey.
+// cfg = [[[[exe+0x7245558]]+8]+0x250], a table of u16 UIMapIconKey.
 uint16_t icon_from_table(int offset) {
     const uintptr_t base = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
     for (uintptr_t root : {off::kMinimapIconRoot, off::kMinimapIconRootAlt}) {
@@ -172,7 +172,7 @@ uint16_t icon_from_table(int offset) {
             if (!p) continue;
             p = *reinterpret_cast<const uintptr_t*>(p + 0x08);
             if (!p) continue;
-            p = *reinterpret_cast<const uintptr_t*>(p + 0x270);
+            p = *reinterpret_cast<const uintptr_t*>(p + 0x250);
             if (!p) continue;
             return *reinterpret_cast<const uint16_t*>(p + offset);
         } __except (EXCEPTION_EXECUTE_HANDLER) {

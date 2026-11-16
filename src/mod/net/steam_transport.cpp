@@ -93,13 +93,22 @@ SteamNetworkingIdentity identity(uint64_t id) {
 // reported to Pearl Abyss as a game crash, so the first exception disables
 // the transport instead. Templates with only trivially copyable arguments,
 // so __try is allowed.
+thread_local DWORD g_last_exception_code = 0;
+thread_local void* g_last_exception_address = nullptr;
+
+int remember_exception(EXCEPTION_POINTERS* pointers) {
+    g_last_exception_code = pointers->ExceptionRecord->ExceptionCode;
+    g_last_exception_address = pointers->ExceptionRecord->ExceptionAddress;
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
 template <class R, class... P, class... A>
 bool call(R& out, R (*fn)(P...), A... args) {
     if (!fn) return false;
     __try {
         out = fn(args...);
         return true;
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    } __except (remember_exception(GetExceptionInformation())) {
         return false;
     }
 }
@@ -109,7 +118,7 @@ bool call_void(void (*fn)(P...), A... args) {
     __try {
         fn(args...);
         return true;
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
+    } __except (remember_exception(GetExceptionInformation())) {
         return false;
     }
 }
@@ -167,7 +176,10 @@ SteamTransport::~SteamTransport() {
 }
 
 void SteamTransport::fail(const char* what) {
-    if (!disabled_) log::error("Steam: exception in {}; Steam transport disabled", what);
+    if (!disabled_) {
+        log::error("Steam: exception 0x{:08X} at {} in {}; Steam transport disabled", g_last_exception_code,
+                   g_last_exception_address, what);
+    }
     disabled_ = true;
     ready_ = false;
 }
