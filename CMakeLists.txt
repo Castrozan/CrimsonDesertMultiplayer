@@ -115,6 +115,9 @@ add_library(cdmp_mod SHARED
     src/mod/net/time_sync.cpp
     src/mod/render/dx12_hook.cpp
     src/mod/render/hud.cpp
+    src/mod/agent/agent_state.cpp
+    src/mod/agent/agent_server.cpp
+    src/mod/agent/agent_bridge.cpp
 )
 cdmp_strict(cdmp_mod)
 target_link_libraries(cdmp_mod PRIVATE cdmp_common imgui safetyhook::safetyhook)
@@ -145,7 +148,7 @@ target_link_libraries(cdmp_probe PRIVATE cdmp_common)
 
 # Tests.
 enable_testing()
-add_executable(cdmp_tests tests/tests.cpp)
+add_executable(cdmp_tests tests/tests.cpp src/mod/agent/agent_state.cpp)
 cdmp_strict(cdmp_tests)
 target_link_libraries(cdmp_tests PRIVATE cdmp_common)
 add_test(NAME unit COMMAND cdmp_tests)

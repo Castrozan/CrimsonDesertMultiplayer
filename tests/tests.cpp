@@ -21,6 +21,7 @@
 #include "common/pattern.h"
 #include "common/protocol.h"
 #include "common/reliable.h"
+#include "mod/agent/agent_state.h"
 
 using namespace cdmp;
 
@@ -1326,6 +1327,37 @@ void test_enemy_zone_machine() {
     }
 }
 
+void test_agent_state_json() {
+    agent::AgentState outside;
+    outside.sequence = 3;
+    outside.uptime_ms = 1500;
+    outside.player_status = "no controlled actor (not in world)";
+    outside.camera_status = "camera \"missing\"\n";
+    const std::string outside_expected =
+          R"json({"sequence":3,"uptime_ms":1500,"in_world":false,"player":null,)json"
+          R"json("player_status":"no controlled actor (not in world)","camera":null,)json"
+          R"json("camera_status":"camera \"missing\"\u000a"})json";
+    CHECK(agent::to_json(outside) == outside_expected);
+
+    agent::AgentState inside;
+    inside.sequence = 4;
+    inside.uptime_ms = 2000;
+    inside.player = agent::PlayerView{{1.5f, -2.0f, 3.25f}, {0.0f, 0.5f, 0.0f, 0.5f}, 100.0f, 120.0f,
+                                      std::numeric_limits<float>::quiet_NaN(), 50.0f, 0.01f};
+    inside.player_status = "in world";
+    inside.camera = agent::CameraView{{1.0f, 2.0f, 3.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}};
+    inside.camera_status = "ok";
+    const std::string inside_expected =
+          R"json({"sequence":4,"uptime_ms":2000,"in_world":true,"player":{"position":[1.5000,-2.0000,3.2500],)json"
+          R"json("rotation":[0.0000,0.5000,0.0000,0.5000],"health":100.0000,"health_max":120.0000,)json"
+          R"json("stamina":null,"stamina_max":50.0000,"static_position_error":0.0100},"player_status":"in world",)json"
+          R"json("camera":{"position":[1.0000,2.0000,3.0000],"forward":[0.0000,0.0000,1.0000],)json"
+          R"json("right":[1.0000,0.0000,0.0000]},"camera_status":"ok"})json";
+    CHECK(agent::to_json(inside) == inside_expected);
+
+    CHECK(agent::escape_json("tab\there\\") == "tab\\u0009here\\\\");
+}
+
 }  // namespace
 
 int main() {
@@ -1352,6 +1384,7 @@ int main() {
     test_enemy_zone_predicate();
     test_enemy_zone_message();
     test_enemy_zone_machine();
+    test_agent_state_json();
     if (g_failures == 0) std::printf("All tests passed\n");
     return g_failures == 0 ? 0 : 1;
 }
