@@ -40,6 +40,11 @@ constexpr wchar_t kDefaultIni[] =
     L"; Language of the panel's texts: en | es\r\n"
     L"language=en\r\n"
     L"\r\n"
+    L"[agent]\r\n"
+    L"; 1 lets AI agents on this PC read your position and camera (127.0.0.1 only, read only)\r\n"
+    L"enabled=1\r\n"
+    L"port=37020\r\n"
+    L"\r\n"
     L"[sniffer]\r\n"
     L"; Needed for co-op (reads and sends the game's internal messages)\r\n"
     L"enabled=1\r\n"
@@ -127,6 +132,8 @@ Config load_config(const std::wstring& ini_path) {
     c.overlay_enabled = read_uint(ini_path, L"overlay", L"enabled", 1) != 0;
     c.overlay_self_marker = read_uint(ini_path, L"overlay", L"self_marker", 1) != 0;
     c.overlay_english = read_string(ini_path, L"overlay", L"language", "en") != L"es";
+    c.agent_enabled = read_uint(ini_path, L"agent", L"enabled", 1) != 0;
+    c.agent_port = static_cast<uint16_t>(read_uint(ini_path, L"agent", L"port", c.agent_port));
     c.sniffer_enabled = read_uint(ini_path, L"sniffer", L"enabled", 1) != 0;
     c.sniffer_record = read_uint(ini_path, L"sniffer", L"record", 0) != 0;  // only when asked for
     c.dev_clone_hotkeys = read_uint(ini_path, L"dev", L"clone_hotkeys", 0) != 0;

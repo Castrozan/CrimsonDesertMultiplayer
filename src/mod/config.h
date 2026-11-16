@@ -28,6 +28,9 @@ struct Config {
     bool overlay_self_marker = true;  // dev aid while validating the projection
     bool overlay_english = true;      // [overlay] language = en | es: the panel's texts
 
+    bool agent_enabled = true;
+    uint16_t agent_port = 37020;
+
     bool sniffer_enabled = true;  // hook internal client/server packets (needed by co-op)
     bool sniffer_record = false;  // also write them to cdmp_packets_*.log/.bin (dev; 50-100 MB/session)
 

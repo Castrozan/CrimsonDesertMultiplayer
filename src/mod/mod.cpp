@@ -11,6 +11,7 @@
 #include "common/clock.h"
 #include "common/transport.h"
 #include "common/udp.h"
+#include "mod/agent/agent_bridge.h"
 #include "mod/config.h"
 #include "mod/game/game_errors.h"
 #include "mod/game/offsets.h"
@@ -49,6 +50,18 @@ HMODULE g_self = nullptr;
 HANDLE g_thread = nullptr;
 HANDLE g_stop = nullptr;
 HANDLE g_late_thread = nullptr;
+HANDLE g_agent_thread = nullptr;
+
+struct AgentBridgeStart {
+    uint16_t port;
+    bool in_game;
+};
+
+DWORD WINAPI agent_bridge_thread(LPVOID param) {
+    const std::unique_ptr<AgentBridgeStart> start(static_cast<AgentBridgeStart*>(param));
+    agent::run_bridge(start->port, g_stop, start->in_game);
+    return 0;
+}
 
 bool stop_requested(DWORD wait_ms = 0) {
     return WaitForSingleObject(g_stop, wait_ms) == WAIT_OBJECT_0;
@@ -771,6 +784,13 @@ DWORD WINAPI worker(LPVOID) {
 
         LocalSource local(in_game);
 
+        if (cfg.agent_enabled) {
+            g_agent_thread = CreateThread(nullptr, 0, agent_bridge_thread,
+                                          new AgentBridgeStart{cfg.agent_port, in_game}, 0, nullptr);
+        } else {
+            log::info("Agent bridge disabled in cdmp.ini");
+        }
+
         // The overlay only makes sense inside the game; a test host would
         // otherwise keep patched DXGI vtables pointing into an unloaded DLL.
         // cdmp_dx12_test opts in explicitly (and never unloads the mod).
@@ -825,6 +845,11 @@ void stop() {
     SetEvent(g_stop);
     WaitForSingleObject(g_thread, 10000);
     CloseHandle(g_thread);
+    if (g_agent_thread) {
+        WaitForSingleObject(g_agent_thread, 10000);
+        CloseHandle(g_agent_thread);
+        g_agent_thread = nullptr;
+    }
     if (g_late_thread) {
         WaitForSingleObject(g_late_thread, 10000);
         CloseHandle(g_late_thread);
