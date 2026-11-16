@@ -1123,6 +1123,9 @@ bool puppet_spawn(const proto::SpawnInfo& info) {
         return false;
     }
     const float pos[3] = {info.pos.x + g_offset_x, info.pos.y, info.pos.z};
+    g_ref_pos[0] = info.pos.x;
+    g_ref_pos[1] = info.pos.y;
+    g_ref_pos[2] = info.pos.z;
     const float rot[4] = {info.rot.x, info.rot.y, info.rot.z, info.rot.w};
     const bool rot_ok = std::fabs(rot[0] * rot[0] + rot[1] * rot[1] + rot[2] * rot[2] + rot[3] * rot[3] - 1.0f) < 0.05f;
     for (auto* v : {&user, &body}) {
