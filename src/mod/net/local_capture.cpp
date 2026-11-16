@@ -43,13 +43,19 @@ constexpr uint32_t kPuppetPlayer = 0xA010F001;
 constexpr uint32_t kPuppetBody = 0xB010F001;
 constexpr uint32_t kPuppetHorse = 0xB010F002;
 
-constexpr size_t kMoveReqSize = 514;
-constexpr size_t kMoveWireSize = 0xEA;  // what is sent of it (see emit)
-constexpr size_t kStartActionReqSize = 725;
+constexpr size_t kMoveReqSize = off::kMoveActorReq_Size;
+constexpr size_t kMoveWireSize = off::kMoveActor_TailEnd;  // what is sent of it (see emit)
+constexpr size_t kStartActionReqSize = off::kStartActionReq_Size;
 constexpr size_t kRotateReqSize = 176;
 constexpr size_t kWallUpSize = 132;
-constexpr size_t kMoveTs = 0xD5;
-constexpr size_t kStartActionTs = 0x15F;
+constexpr size_t kMoveTs = off::kMoveActor_Data + off::kMoveData_Timestamp;
+constexpr size_t kMovePos = off::kMoveActor_Data + off::kMoveData_Pos;
+constexpr size_t kMoveQuat = off::kMoveActor_Data + off::kMoveData_Quat;
+constexpr size_t kMovePathLocalPos = off::kMoveActor_Data + off::kMoveData_PathLocalPos;
+constexpr size_t kMovePathLocalQuat = off::kMoveActor_Data + off::kMoveData_PathLocalQuat;
+constexpr size_t kMovePathParent = off::kMoveActor_Data + off::kMoveData_PathParent;
+constexpr size_t kMovePathWorldPos = off::kMoveActor_Data + off::kMoveData_PathWorldPos;
+constexpr size_t kStartActionTs = off::kStartActionReq_Data + off::kMoveData_Timestamp;
 constexpr size_t kRotateTs = 0x9C;
 
 uint64_t steady_ms() {
@@ -130,7 +136,7 @@ float g_horse_sent_pos[3] = {NAN, NAN, NAN};
 uint64_t g_horse_last_synth_ms = 0;
 Bytes g_last_move;                  // last real MoveActorReq payload (template for synth)
 uint64_t g_last_move_ms = 0;        // steady_ms when it was seen
-uint64_t g_last_move_ts = 0;        // its game timestamp (+0xD5)
+uint64_t g_last_move_ts = 0;        // its game timestamp (+0xD4)
 float g_last_sent_pos[3] = {NAN, NAN, NAN};
 uint64_t g_last_synth_ms = 0;
 uint64_t g_synthesized = 0;
@@ -317,8 +323,8 @@ void drain_equip() {
 }
 
 void emit(proto::EventKind kind, Bytes payload) {
-    // MoveActorReq: the Ack uses only its first 0xEA bytes; the trailing
-    // 10 x 28-byte history (280 of 514 bytes) is never needed by the receiver.
+    // MoveActorReq: the Ack uses only its first 0xEE bytes; the trailing
+    // 10 x 28-byte history (280 of 518 bytes) is never needed by the receiver.
     if (kind == proto::EventKind::Move && payload.size() == kMoveReqSize) payload.resize(kMoveWireSize);
     EventSink sink;
     {
@@ -428,10 +434,10 @@ void capture_synth(uint64_t now) {
     Bytes req = g_last_move;
     const float pos[3] = {me->position.x, me->position.y, me->position.z};
     const float rot[4] = {me->rotation.x, me->rotation.y, me->rotation.z, me->rotation.w};
-    std::memcpy(req.data() + 0x04, pos, sizeof pos);  // current position
-    std::memcpy(req.data() + 0x10, rot, sizeof rot);  // facing (matches q@10, verified)
-    std::memcpy(req.data() + 0x4C, pos, sizeof pos);  // second copy (equal when moving)
-    std::memcpy(req.data() + 0x58, rot, sizeof rot);
+    std::memcpy(req.data() + kMovePos, pos, sizeof pos);  // current position
+    std::memcpy(req.data() + kMoveQuat, rot, sizeof rot);  // facing (matches q@10, verified)
+    std::memcpy(req.data() + kMovePathLocalPos, pos, sizeof pos);  // second copy (equal when moving)
+    std::memcpy(req.data() + kMovePathLocalQuat, rot, sizeof rot);
     // Game clock: the game's own (stops in menus), else advanced from the
     // last real Move by the wall clock.
     uint64_t ts = g_clock_reader.load(std::memory_order_relaxed) == 1 ? capture_game_clock_ms() : 0;
@@ -462,12 +468,12 @@ void capture_horse_synth(uint64_t now) {
     if (dx * dx + dy * dy + dz * dz < kSynthMinMove * kSynthMinMove) return;
     Bytes req = g_horse_last_move;
     const float p[3] = {pos->x, pos->y, pos->z};
-    std::memcpy(req.data() + 0x04, p, sizeof p);
-    std::memcpy(req.data() + 0x4C, p, sizeof p);
+    std::memcpy(req.data() + kMovePos, p, sizeof p);
+    std::memcpy(req.data() + kMovePathLocalPos, p, sizeof p);
     if (auto rot = game::actor_world_rotation(g_own_horse)) {
         const float q[4] = {rot->x, rot->y, rot->z, rot->w};
-        std::memcpy(req.data() + 0x10, q, sizeof q);
-        std::memcpy(req.data() + 0x58, q, sizeof q);
+        std::memcpy(req.data() + kMoveQuat, q, sizeof q);
+        std::memcpy(req.data() + kMovePathLocalQuat, q, sizeof q);
     }
     std::memcpy(req.data() + kMoveTs, &clock, 8);
     std::memcpy(g_horse_sent_pos, p, sizeof p);
@@ -711,7 +717,7 @@ void capture_observe_c2s(const uint8_t* packet, size_t size) {
     if (kind == proto::EventKind::Move && keys::is_class(key, keys::kClassWorld) && key != kPuppetBody &&
         key != kPuppetHorse && key != g_own_horse) {
         float p[3];
-        std::memcpy(p, payload.data() + 0x04, sizeof p);
+        std::memcpy(p, payload.data() + kMovePos, sizeof p);
         std::lock_guard lock(g_actors_mutex);
         if (g_actors.size() > 4096) g_actors.clear();
         g_actors[key] = {{p[0], p[1], p[2]}, steady_ms()};
@@ -720,7 +726,7 @@ void capture_observe_c2s(const uint8_t* packet, size_t size) {
     if (g_own_horse && key == g_own_horse) {
         if (kind == proto::EventKind::Move) {
             g_horse_last_move = payload;
-            std::memcpy(g_horse_sent_pos, payload.data() + 0x04, sizeof g_horse_sent_pos);
+            std::memcpy(g_horse_sent_pos, payload.data() + kMovePos, sizeof g_horse_sent_pos);
         }
         emit(kind, std::move(payload));
         return;
@@ -732,20 +738,20 @@ void capture_observe_c2s(const uint8_t* packet, size_t size) {
     std::memcpy(&ts, payload.data() + ts_off, 8);
     note_clock(ts);
     if (kind == proto::EventKind::Move && g_own_horse) {
-        // Riding: Path.parent (+0x8C) is the horse and the receiver derives
+        // Riding: Path.parent (+0x44) is the horse and the receiver derives
         // the horse's moves from ours.
         uint32_t parent = 0;
-        std::memcpy(&parent, payload.data() + 0x8C, 4);
+        std::memcpy(&parent, payload.data() + kMovePathParent, 4);
         if (parent == g_own_horse) {
             g_ridden_until_ms = steady_ms() + 200;
-            std::memcpy(g_horse_sent_pos, payload.data() + 0x94, sizeof g_horse_sent_pos);
+            std::memcpy(g_horse_sent_pos, payload.data() + kMovePathWorldPos, sizeof g_horse_sent_pos);
         }
     }
     if (kind == proto::EventKind::Move) {
         g_last_move = payload;
         g_last_move_ms = steady_ms();
         g_last_move_ts = ts;
-        std::memcpy(g_last_sent_pos, payload.data() + 0x04, sizeof g_last_sent_pos);
+        std::memcpy(g_last_sent_pos, payload.data() + kMovePos, sizeof g_last_sent_pos);
     }
     emit(kind, std::move(payload));
 }

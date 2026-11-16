@@ -337,7 +337,7 @@ void test_coop_messages() {
     {
         proto::GameEvent ev;
         ev.kind = proto::EventKind::StartAction;
-        ev.payload.resize(725);
+        ev.payload.resize(729);
         for (size_t i = 0; i < ev.payload.size(); ++i) ev.payload[i] = static_cast<uint8_t>(i * 7);
         auto p = proto::decode(proto::encode(make(ev)));
         auto* d = p ? std::get_if<proto::GameEvent>(&p->body) : nullptr;
@@ -587,7 +587,7 @@ void test_session_game_data() {
     CHECK(s.state() == ClientSession::State::Connected);
 
     out.clear();
-    s.send_event(proto::GameEvent{proto::EventKind::Move, std::vector<uint8_t>(514, 1)}, 20);
+    s.send_event(proto::GameEvent{proto::EventKind::Move, std::vector<uint8_t>(518, 1)}, 20);
     CHECK(s.send_reliable(proto::RelKind::Despawn, {1, 0, 0, 0}, 20));
     CHECK(out.size() == 2);
     // Loop everything back, like cdmp_peer's relay with a single player.

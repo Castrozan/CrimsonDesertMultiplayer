@@ -73,7 +73,7 @@ std::optional<proto::EnemyZoneMsg> enemy_zone_update();
 void enemy_drop_copies_here();
 
 // Co-op (network thread): reliable messages to send.
-// EnemySpawn: u32 copy key | u32 load size | load | n x StartActionReq (725 B each,
+// EnemySpawn: u32 copy key | u32 load size | load | n x StartActionReq (729 B each,
 // oldest first; n may be 0).
 // EnemyRemove: n x u32 copy key.
 // EnemyState: u16 opcode | payload (VaryHPAck, NotifyHandleDeadAck; keys translated).

@@ -3,6 +3,7 @@
 // verified live with cdmp_probe; see docs/research/hallazgos-en-vivo.md.
 // On any other build the mod refuses to read game memory.
 
+#include <cstddef>
 #include <cstdint>
 
 namespace cdmp::game::build_3663 {
@@ -109,6 +110,34 @@ inline constexpr uint16_t kOpUpdateWallUpDataAck = 2939;
 inline constexpr uint16_t kOpUnequipItemAck = 3155;
 inline constexpr uint16_t kOpOtherEquipItemAck = 2426;
 inline constexpr uint16_t kOpOtherUnequipItemAck = 2565;  // u32 key | u16 slot | u32 serial
+
+inline constexpr size_t kMoveData_PathLocalPos = 0x00;
+inline constexpr size_t kMoveData_PathLocalQuat = 0x0C;
+inline constexpr size_t kMoveData_PathLocalScale = 0x1C;
+inline constexpr size_t kMoveData_PathParent = 0x40;
+inline constexpr size_t kMoveData_PathWorldPos = 0x48;
+inline constexpr size_t kMoveData_PathWorldQuat = 0x54;
+inline constexpr size_t kMoveData_PathWorldThroughPathEndSize = 0x40;
+inline constexpr size_t kMoveData_Quat = 0xB0;
+inline constexpr size_t kMoveData_Pos = 0xC0;
+inline constexpr size_t kMoveData_Key = 0xCC;
+inline constexpr size_t kMoveData_Timestamp = 0xD0;
+inline constexpr size_t kMoveData_Size = 0xDE;
+
+inline constexpr size_t kMoveActor_Data = 0x04;
+inline constexpr size_t kMoveActor_Tail = kMoveActor_Data + kMoveData_Size;
+inline constexpr size_t kMoveActor_TailEnd = kMoveActor_Tail + 12;
+inline constexpr size_t kMoveActorReq_Size = kMoveActor_TailEnd + 10 * 28;
+inline constexpr size_t kMoveActorAck_Size = kMoveActor_TailEnd + 1;
+
+inline constexpr size_t kStartActionReq_Data = 0x8E;
+inline constexpr size_t kStartActionAck_Data = kStartActionReq_Data + 1;
+inline constexpr size_t kStartAction_TargetAfterData = kMoveData_Size + 4;
+inline constexpr size_t kStartActionReq_Size = 729;
+inline constexpr size_t kStartActionReq_Force = kStartActionReq_Size - 1;
+static_assert(kMoveActorReq_Size == 518 && kMoveActorAck_Size == 239);
+static_assert(kStartActionReq_Data + kMoveData_Timestamp == 0x15E);
+static_assert(kStartActionReq_Data + kStartAction_TargetAfterData == 0x170);
 
 // Map pins (docs/research/mapa-minimapa.md §1; capture cdmp_packets_20261003-211630):
 //   CreateOrChangePinMarkerAck (6 + 22 N B): 04 | u32 owner | u8 group |
