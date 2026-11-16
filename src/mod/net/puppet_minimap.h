@@ -1,6 +1,6 @@
 #pragma once
 // The other player's character (the puppet) as an icon on our minimap.
-// Every actor has a ClientMinimapActorComponent; the game asks 0x9E89C0
+// Every actor has a ClientMinimapActorComponent; the game asks 0xB24A10
 // which icon an actor gets and decides "none" for the puppet (another
 // player who is not in our mercenary clan). An inline hook at the start of
 // that function answers for the puppet only, with an icon from the game's

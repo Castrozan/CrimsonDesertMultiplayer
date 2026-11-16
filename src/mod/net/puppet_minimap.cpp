@@ -19,7 +19,7 @@
 
 namespace cdmp::net {
 namespace {
-namespace off = game::build_2976;
+namespace off = game::build_3663;
 
 constexpr uint32_t kPuppetPlayer = 0xA010F001;
 
@@ -33,7 +33,7 @@ std::atomic<uint32_t> g_diag_answer{0xFFFFFFFF};  // icon | sub << 16 (diagnosti
 std::atomic<uint32_t> g_diag_flags{0};            // a | b << 8
 std::atomic<uint64_t> g_failed{0};      // icon table not readable
 // Copies of the other player's enemies: the game gives a network-driven NPC
-// no icon (never in battle, no aggro: 0x9E9754 falls to 0xFFFF), so they get
+// no icon (never in battle, no aggro: 0xB258A3 falls to 0xFFFF), so they get
 // the hostile one at this table offset when it gives none; a dead copy keeps
 // the game's corpse icon (copias-enemigos-faltan-pose-minimapa.md §4).
 std::atomic<int> g_enemy_offset{0};
@@ -161,7 +161,7 @@ uint32_t actor_key_of(const void* comp) {
     }
 }
 
-// cfg = [[[[exe+0x6D69528]]+8]+0x270], a table of u16 UIMapIconKey.
+// cfg = [[[[exe+0x7245558]]+8]+0x270], a table of u16 UIMapIconKey.
 uint16_t icon_from_table(int offset) {
     const uintptr_t base = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
     for (uintptr_t root : {off::kMinimapIconRoot, off::kMinimapIconRootAlt}) {

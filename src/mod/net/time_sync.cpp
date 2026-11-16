@@ -19,7 +19,7 @@
 
 namespace cdmp::net {
 namespace {
-namespace off = game::build_2976;
+namespace off = game::build_3663;
 
 constexpr uint32_t kSendEveryMs = 5000;
 // Below this difference nothing is done: ~2 game minutes, 10 real seconds.
@@ -56,7 +56,7 @@ std::string hhmm(uint64_t raw) {
     return std::format("day {} {:02}:{:02}", f.day, f.hour, f.minute);
 }
 
-// Our current time of day, from the client's copy (exe+0x6A6D218) carried
+// Our current time of day, from the client's copy (exe+0x6F31C78) carried
 // forward to now. The game copies it without a lock: read it twice.
 std::optional<std::pair<FieldTime, uint64_t>> own_time() {
     if (!capture_game_clock_trusted()) {
@@ -85,7 +85,7 @@ std::optional<std::pair<FieldTime, uint64_t>> own_time() {
     return std::make_pair(*ft, ft->raw_at(*now));
 }
 
-// SetFieldTimeReq (2125, 36 bytes): FieldTime (31) | u8 flag 0 | u32 key 0.
+// SetFieldTimeReq (2150, 36 bytes): FieldTime (31) | u8 flag 0 | u32 key 0.
 // With flag 0 the server only sets the time (as when waking up), saves it
 // with the field and tells its client with SetFieldTimeAck.
 bool set_time(FieldTime ft, uint64_t raw) {

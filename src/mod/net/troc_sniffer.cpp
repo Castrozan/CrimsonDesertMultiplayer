@@ -29,7 +29,7 @@
 
 namespace cdmp::net {
 namespace {
-namespace off = game::build_2976;
+namespace off = game::build_3663;
 
 enum class Dir : uint8_t { ClientToServer = 1, ServerToClient = 2 };
 
@@ -136,11 +136,11 @@ constexpr uint64_t kMaxC2SWaitMs = 3000;
 thread_local bool t_posting = false;
 
 // The world's loading (the tunnel walk into the world): from the game's
-// GameLoadingStartReq (C>S 2437, payload 0) to 1.5 s after its
-// LoadingCompleteAck (S>C 2762), nothing of ours goes in either way: they
+// GameLoadingStartReq (C>S 2350, payload 0) to 1.5 s after its
+// LoadingCompleteAck (S>C 2891), nothing of ours goes in either way: they
 // wait in their queues (analisis-ia2/P5: the horse copy's action went in
 // mid-load; both of Shadow's crashes were in the tunnel). At most 120 s.
-constexpr uint16_t kOpGameLoadingStartReq = 2437, kOpLoadingCompleteAck = 2762;
+constexpr uint16_t kOpGameLoadingStartReq = 2350, kOpLoadingCompleteAck = 2891;
 constexpr uint64_t kAfterLoadingMs = 1500, kMaxLoadingMs = 120000;
 std::atomic<bool> g_loading{false};
 std::atomic<uint64_t> g_loading_start_ms{0}, g_loading_done_ms{0};

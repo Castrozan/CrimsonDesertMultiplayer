@@ -23,29 +23,29 @@
 
 namespace cdmp::net {
 namespace {
-namespace off = game::build_2976;
+namespace off = game::build_3663;
 
 constexpr uint32_t kPuppetPlayer = 0xA010F001;
-constexpr uint16_t kOpCurrentTargetChangeReq = 2984;   // u32 actor | u32 target | u64 seq | u8 | u8 reason
-constexpr uint16_t kOpCurrentTargetChangedAck = 3040;  // same 18 B; u8 at +0x10 = force
-constexpr uint16_t kOpDoFrameEventReq = 2380;
+constexpr uint16_t kOpCurrentTargetChangeReq = 2918;   // u32 actor | u32 target | u64 seq | u8 | u8 reason
+constexpr uint16_t kOpCurrentTargetChangedAck = 2859;  // same 18 B; u8 at +0x10 = force
+constexpr uint16_t kOpDoFrameEventReq = 2460;
 
-constexpr uintptr_t kIsTargetable = 0x22141E0;    // (target comp, actor* candidate, u8 mode)
+constexpr uintptr_t kIsTargetable = 0x245AB80;    // (target comp, actor* candidate, u8 mode)
 constexpr uint8_t kIsTargetableHead[] = {0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x74,
                                          0x24, 0x18, 0x48, 0x89, 0x7C, 0x24, 0x20, 0x55};
-constexpr uintptr_t kSetCurrentTarget = 0x2217290;  // (comp, int* res, u32 target, u64* seq, ...)
+constexpr uintptr_t kSetCurrentTarget = 0x245E3D0;  // (comp, int* res, u32 target, u64* seq, ...)
 constexpr uint8_t kSetCurrentTargetHead[] = {0x48, 0x8B, 0xC4, 0x4C, 0x89, 0x48, 0x20, 0x44,
                                              0x89, 0x40, 0x18, 0x48, 0x89, 0x50, 0x10, 0x55};
 
-// AICondition_CheckAIBattleType vf1 (vtable 0x58C2BD8): (cond, enemy's AI
+// AICondition_CheckAIBattleType vf1 (vtable 0x5CF8A68): (cond, enemy's AI
 // object, AI context) -> 0 when the condition holds. Its body (.xtls
 // 0xC5DC280) gives "attack" (0 within the attack quota, 1 few attackers) or
 // "wait" (2) by the enemy's place in the TARGET's rank list, which the game
 // never fills for the other player's copy (it only does for actors this
 // client controls): enemies on the copy always wait and circle
 // (copia-objetivo-sin-ataques.md section 7). The entry is a 5-byte jmp into .xtls.
-constexpr uintptr_t kCheckAIBattleType = 0x22E0A30;
-constexpr uint8_t kCheckAIBattleTypeHead[] = {0xE9, 0x3B, 0xB4, 0x8A, 0x0C};
+constexpr uintptr_t kCheckAIBattleType = 0x25348D0;
+constexpr uint8_t kCheckAIBattleTypeHead[] = {0xE9, 0x7B, 0x19, 0xFF, 0x0A};
 
 SafetyHookInline g_is_targetable;
 SafetyHookInline g_battle_type;

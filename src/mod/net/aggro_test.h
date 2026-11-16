@@ -3,9 +3,9 @@
 // docs/research/companeros-mercenarios.md §3-§7. In every capture the enemy
 // AI (which runs on the client) never chose the puppet, although it passes
 // the target checks. This dev test:
-//   P1  read-only hooks at the entry of IsTargetable 0x22141E0 and
-//       SetCurrentTarget 0x2217290: does the puppet ever come up?
-//   P2  Ctrl+F5: inject CurrentTargetChangedAck (3040) so the last enemy that
+//   P1  read-only hooks at the entry of IsTargetable 0x245AB80 and
+//       SetCurrentTarget 0x245E3D0: does the puppet ever come up?
+//   P2  Ctrl+F5: inject CurrentTargetChangedAck (2859) so the last enemy that
 //       targeted us targets the puppet instead (native "server says: your
 //       target is X"); then the log shows whether it keeps it and attacks
 //       (CurrentTargetChangeReq / DoFrameEventReq aimed at the puppet).
@@ -35,7 +35,7 @@ uint64_t aggro_baited();
 // Counters of the CheckAIBattleType hook, for the log.
 std::string aggro_battle_type_stats();
 // Host, network thread: the other player's copy just hit our enemy `enemy`:
-// it now targets that copy (CurrentTargetChangedAck 3040, force, reason
+// it now targets that copy (CurrentTargetChangedAck 2859, force, reason
 // 0x18, its target counter + 1), at most every 2 s per enemy, only while the
 // copy is targetable (aggro_set_copy_targetable) and alive and shown
 // (analisis-ia2/P2 §4.2-4.3). True if the request was queued.

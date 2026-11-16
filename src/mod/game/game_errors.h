@@ -1,5 +1,5 @@
 #pragma once
-// The game reports its internal failures through one function (exe+0x35D8D0,
+// The game reports its internal failures through one function (exe+0x3AACB0,
 // ~2900 callers) with a printf-style message (often Korean, UTF-8), an error
 // code and a severity, but writes them nowhere. A read-only mid-hook copies
 // them so cdmp.log shows why the game rejected something we injected

@@ -15,13 +15,13 @@
 
 namespace cdmp::game {
 namespace {
-namespace off = build_2976;
+namespace off = build_3663;
 
 // Entry of the logger: arguments 10-13 on the stack ([rsp] = return address).
-// Seen at a call site (0x35AED1..0x35AF10): arg10 dword = code, arg11 dword =
+// Seen at a call site (0x3A8145..0x3A8184): arg10 dword = code, arg11 dword =
 // severity, arg12 = const char* message (printf format), arg13 = first value.
-constexpr uintptr_t kErrorLogger = 0x35D8D0;
-constexpr uint8_t kErrorLoggerHead[] = {0xE9};  // starts with a jmp into .xtls
+constexpr uintptr_t kErrorLogger = 0x3AACB0;
+constexpr uint8_t kErrorLoggerHead[] = {0x48};
 constexpr uint32_t kArgCode = 0x50, kArgSeverity = 0x58, kArgText = 0x60, kArgValue = 0x68;
 constexpr int kExtraValues = 3;  // arguments 14-16 (more format values, if any)
 
@@ -34,7 +34,6 @@ struct Entry {
     char text[160];
 };
 SafetyHookMid g_hook;
-safetyhook::Allocation g_stub;  // our own copy of the logger's leading jmp, hooked instead
 SRWLOCK g_lock = SRWLOCK_INIT;
 Entry g_ring[32];
 uint32_t g_count = 0;
@@ -91,52 +90,8 @@ bool game_errors_install() {
         log::info("Game errors: hook installed (the game's internal errors go to this log)");
         return true;
     }
-    log::info("Game errors: direct hook not possible (safetyhook error {}, inline {}); using a stub",
-              static_cast<int>(direct.error().type),
-              direct.error().type == safetyhook::MidHook::Error::BAD_INLINE_HOOK
-                  ? static_cast<int>(direct.error().inline_hook_error.type)
-                  : -1);
-
-    // The logger is a lone `jmp rel32` into Denuvo's .xtls. Copy that jmp into
-    // memory of ours near it, hook the copy (clean bytes), then point the
-    // original jmp at the copy. Only 4 bytes of the game change.
-    int32_t rel = 0;
-    std::memcpy(&rel, target + 1, 4);
-    uint8_t* const dest = target + 5 + rel;
-    auto alloc = safetyhook::Allocator::global()->allocate_near({target}, 32);
-    if (!alloc) {
-        log::warn("Game errors: no memory near the logger; not hooked");
-        return false;
-    }
-    g_stub = std::move(*alloc);
-    uint8_t* stub = g_stub.data();
-    const int64_t to_dest = dest - (stub + 5);
-    const int64_t to_stub = stub - (target + 5);
-    if (to_dest != static_cast<int32_t>(to_dest) || to_stub != static_cast<int32_t>(to_stub)) {
-        log::warn("Game errors: stub out of jmp range; not hooked");
-        return false;
-    }
-    std::memset(stub, 0xCC, 32);
-    stub[0] = 0xE9;
-    const int32_t r1 = static_cast<int32_t>(to_dest);
-    std::memcpy(stub + 1, &r1, 4);
-    auto hooked = safetyhook::MidHook::create(stub, on_error);
-    if (!hooked) {
-        log::warn("Game errors: could not hook the stub either; not hooked");
-        return false;
-    }
-    g_hook = std::move(*hooked);
-    DWORD old = 0;
-    if (!VirtualProtect(target + 1, 4, PAGE_EXECUTE_READWRITE, &old)) {
-        log::warn("Game errors: cannot write the logger's jmp; not hooked");
-        return false;
-    }
-    const int32_t r2 = static_cast<int32_t>(to_stub);
-    std::memcpy(target + 1, &r2, 4);
-    VirtualProtect(target + 1, 4, old, &old);
-    FlushInstructionCache(GetCurrentProcess(), target, 5);
-    log::info("Game errors: hook installed through a stub (the game's internal errors go to this log)");
-    return true;
+    log::warn("Game errors: hook not possible (safetyhook error {}); not hooked", static_cast<int>(direct.error().type));
+    return false;
 }
 
 void game_errors_drain() {

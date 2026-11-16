@@ -27,7 +27,7 @@ using probe::Process;
 
 namespace {
 
-constexpr uint32_t kKnownTimestamp = 0x6AB28F00;  // CrimsonDesert.exe 1.0.0.2976
+constexpr uint32_t kKnownTimestamp = 0x6AF5D198;  // CrimsonDesert.exe 1.0.0.3663
 
 void usage() {
     std::puts(
@@ -240,7 +240,7 @@ int cmd_info(const Process& p) {
     auto ts = e_lfanew ? p.read<uint32_t>(p.module_base() + *e_lfanew + 8) : std::nullopt;
     if (ts) {
         std::printf("PE timestamp 0x%08X %s\n", *ts,
-                    *ts == kKnownTimestamp ? "(known build 1.0.0.2976)"
+                    *ts == kKnownTimestamp ? "(known build 1.0.0.3663)"
                                            : "(UNKNOWN BUILD - offsets/sigs may be invalid)");
     }
     return 0;

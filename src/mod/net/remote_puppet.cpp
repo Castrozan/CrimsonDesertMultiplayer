@@ -33,7 +33,7 @@
 
 namespace cdmp::net {
 namespace {
-namespace off = game::build_2976;
+namespace off = game::build_3663;
 using Bytes = std::vector<uint8_t>;
 
 // Fresh keys for the puppet. Real serials seen so far are below 0x1000, so
@@ -515,7 +515,7 @@ std::mutex g_gimmick_mutex;
 std::set<SceneId> g_scene_gimmicks;
 // The piece (physics body) id of each tree in OUR world, from our own hooks:
 // the hook's +0x1E piece id is made by the client that throws the rope and
-// exists only there, so the sender's one fails here (0x5A5370 finds no such
+// exists only there, so the sender's one fails here (0x68D860 finds no such
 // body; arbol-cuerda-fallo.md). Forgotten whenever the tree loads or unloads
 // (ids change with every load).
 std::map<SceneId, uint64_t> g_own_pieces;
@@ -547,14 +547,14 @@ constexpr uint64_t kRopeWatchdogMs = 5000;
 std::atomic<uint64_t> g_rope_probe_at{0};
 std::atomic<int> g_rope_probes{0};
 // [dev] rope_piece_lookup: the tree's piece id on this PC, from its scene id,
-// the way the game finds it (0x5947C7): without a piece the rope has no body
+// the way the game finds it (0x67D40C): without a piece the rope has no body
 // to pull and the tree cannot bend.
 std::atomic<bool> g_rope_lookup{false};
 uint64_t g_rope_lookups = 0, g_rope_lookup_found = 0;
 // The tree bends for the one pulling only: each frame the game calls
-// TreeComponent::SetBend for the LOCAL player (0x1190FD0, input-driven), never
-// for the copy (gate 0x86A557), and no message carries it (arbol-cuerda-3.md).
-// [dev] rope_bend: a mid-hook in the same actor update (0x86A576) calls it for
+// TreeComponent::SetBend for the LOCAL player (0x139F550, input-driven), never
+// for the copy (gate 0x97D951), and no message carries it (arbol-cuerda-3.md).
+// [dev] rope_bend: a mid-hook in the same actor update (0x97D970) calls it for
 // the copy while the sender pulls (its pull actions), visual only.
 std::atomic<bool> g_rope_bend{false};
 std::atomic<bool> g_copy_pulling{false};      // the sender's last main action is a pull one (network thread)
@@ -565,23 +565,23 @@ constexpr uint32_t kRopePullActions[] = {0xD9C333C4, 0x76D8C2D8, 0x6B4EE3CA, 0x5
 constexpr float kBendPerSecond = 0.15f, kBendMax = 0.8f;
 SafetyHookMid g_bend_hook;
 // The rope's effect state (arbol-cuerda-4-cuerda-visible.md R1): only the
-// frame event ClientFrameEventRemoteCatchEffectState (0x595FE0) turns on
+// frame event ClientFrameEventRemoteCatchEffectState (0x67EC30) turns on
 // u8 comp+0xAC0 / f32 comp+0xABC per slot (stride 0x1A0), and it never runs
 // on the copy: its rope's shader ratio stays 0 and only part of it shows.
 // The same actor-update hook sets them while the copy is on a tree (phase
-// 2-3), visual only (read by 0x11930A0 alone). Off for good at a fault.
+// 2-3), visual only (read by 0x13A1620 alone). Off for good at a fault.
 std::atomic<bool> g_rope_effect{true};
 uintptr_t g_effect_actor = 0;  // the copy whose effect is on (actor-update thread)
 // R2: the pull's flex on the copy's rope (+0x4E0 force, +0x4E4 speed,
 // +0x4E8 dir, u8 +0x4F4 on), as the local player's pull writes it.
 std::atomic<uintptr_t> g_flex_comp{0}, g_flex_actor{0};  // set on the copy's own update thread
 // The rope's far end (arbol-cuerda-5.md R5): the drawn rope is [node A, ...,
-// node B] (0x5AEAA0, every frame); A and B hang from bones of the rope tool,
+// node B] (0x696510, every frame); A and B hang from bones of the rope tool,
 // which only the local player has and moves onto the hooked point
-// (0x17A6210, local only). The copy has no tool: its B stayed by its body
+// (0x1944E90, local only). The copy has no tool: its B stayed by its body
 // and the rope came out short, pointing elsewhere. A mid-hook in the
-// per-slot tick, right before 0x5AEAA0 (0x59D89A), puts B on the hook point
-// each frame, as 0x5AEAA0 places the tip. Also measures |B - target| for
+// per-slot tick, right before 0x696510 (0x685DC2), puts B on the hook point
+// each frame, as 0x696510 places the tip. Also measures |B - target| for
 // the copy and for us (the probe).
 SafetyHookMid g_rope_end_hook;
 std::atomic<bool> g_rope_end{false};
@@ -590,8 +590,8 @@ std::atomic<float> g_end_gap_copy{-1.0f}, g_end_gap_ours{-1.0f};  // |B - target
 // Set while the game's lookup runs; still set after it = it faulted.
 bool g_rope_lookup_faulted = false;
 // ReleaseRemoteCatchResultAck: u32 catcher | u8 slot | u8 reason (reader
-// 0xB5BD60 -> 0x5A7A10; the game's own releases use reason 2).
-constexpr uint16_t kOpReleaseRemoteCatchResultAck = 2471;
+// 0xB5BD60 -> 0x68F130; the game's own releases use reason 2).
+constexpr uint16_t kOpReleaseRemoteCatchResultAck = 3041;
 constexpr uint8_t kReleaseReason = 2;
 
 std::string scene_text(const SceneId& id) {
@@ -666,7 +666,7 @@ constexpr uint64_t kMoveSilenceMs = 150;  // real MoveActorReqs come every ~25 m
 //   (fill_gap_before).
 // Each kind goes in in arrival order: a due time never goes below the previous one.
 constexpr uint64_t kHoldMs = 100;
-constexpr int64_t kClientRenderDelayMs = 200;  // exe+0x6CB9548 (build 2976)
+constexpr int64_t kClientRenderDelayMs = 200;  // exe+0x718EA48 (build 3663)
 uint64_t g_last_due = 0, g_last_action_due = 0;
 uint64_t g_action_hold = 0;  // the latest action's hold: for WallUp and weapon changes
 // The copy was reloaded: the Move before it is no reference for gap filling.
@@ -979,7 +979,7 @@ bool spawn_horse(const proto::SpawnInfo& info, uint64_t now) {
     }
     // Note: loading it without an owner record (+0x12 = 0, caballo-coop.md §8)
     // crashed the game right after the load (live test 2, access violation at
-    // exe+0x1F63FE6 on another thread). With the owner it is silently not
+    // exe+0x21BD706 on another thread). With the owner it is silently not
     // created; the horse stays experimental and off by default.
     // Party list: ... | player | other member | horse | ... The other member
     // is an actor of the sender's world; give it a key of ours.
@@ -2055,13 +2055,13 @@ bool movement_ts(const Bytes& pk, size_t& at, InjectClock::Buffer& buffer) {
 namespace {
 
 // The piece id our client gives the tree with this scene id, as the game finds
-// it at 0x5947C7: mgr = [[[exe+0x6D69190]+0xC8]]+0x80; 0x1851010(mgr, &att,
+// it at 0x67D40C: mgr = [[[exe+0x72451C0]+0xC8]]+0x80; 0x19F84A0(mgr, &att,
 // &scene) attaches the scene object (att+8); its body [[obj+0x58]+0xE0] (when
 // [obj+0x58]+0x15 != 1) gives the piece through vf 0x70; att is released with
-// 0x1434880. ~0 if anything is missing. Client network thread only, where the
+// 0x1659380. ~0 if anything is missing. Client network thread only, where the
 // game handles RemoteCatchResultAck itself.
 uintptr_t scene_object_manager(uintptr_t base) {
-    const auto world = game::read_ptr(base + 0x6D69190);
+    const auto world = game::read_ptr(base + 0x72451C0);
     const auto a = world ? game::read_ptr(*world + 0xC8) : std::nullopt;
     const auto b = a ? game::read_ptr(*a) : std::nullopt;
     const auto m = b ? game::read_ptr(*b + 0x80) : std::nullopt;
@@ -2079,7 +2079,7 @@ uint64_t rope_piece_of(uintptr_t base, const uint8_t* scene) {
     bool attached = false;
     g_rope_lookup_faulted = true;  // stays so if the game code below faults
     __try {
-        reinterpret_cast<Find>(base + 0x1851010)(mgr, att, scene);
+        reinterpret_cast<Find>(base + 0x19F84A0)(mgr, att, scene);
         attached = true;
         uintptr_t obj = 0;
         std::memcpy(&obj, att + 8, sizeof obj);
@@ -2098,9 +2098,9 @@ uint64_t rope_piece_of(uintptr_t base, const uint8_t* scene) {
     }
     if (attached) {
         __try {
-            const uintptr_t vt = base + 0x5725E48;  // ScopeAttacherBase, as the game leaves it
+            const uintptr_t vt = base + 0x5B40000;  // ScopeAttacherBase, as the game leaves it
             std::memcpy(att, &vt, sizeof vt);
-            reinterpret_cast<Release>(base + 0x1434880)(att);
+            reinterpret_cast<Release>(base + 0x1659380)(att);
         } __except (EXCEPTION_EXECUTE_HANDLER) {
             return ~0ull;
         }
@@ -2144,9 +2144,9 @@ void fill_rope_piece(std::vector<uint8_t>& out) {
 
 namespace {
 
-// SetBend on the tree the copy holds, as 0x1190FD0 does for the local player:
-// node = 0x5B1600(comp, 0); tree = 0x491AC0(node); hook point from
-// 0x5A4760(comp, 0, out) (world x/z at out+0x1C/+0x24); 0x349EA10(tree, dir,
+// SetBend on the tree the copy holds, as 0x139F550 does for the local player:
+// node = 0x699130(comp, 0); tree = 0x566360(node); hook point from
+// 0x68CC50(comp, 0, out) (world x/z at out+0x1C/+0x24); 0x37E33D0(tree, dir,
 // strength), dir towards the copy, y 0. False if it faulted (then never again).
 bool bend_tree(uintptr_t base, uintptr_t copy, uintptr_t own, float copy_x, float copy_z, float strength) {
     using Node = uintptr_t(__fastcall*)(uintptr_t, int);
@@ -2169,9 +2169,9 @@ bool bend_tree(uintptr_t base, uintptr_t copy, uintptr_t own, float copy_x, floa
                 return true;
             }
         }
-        const uintptr_t node = reinterpret_cast<Node>(base + 0x5B1600)(comp, 0);
+        const uintptr_t node = reinterpret_cast<Node>(base + 0x699130)(comp, 0);
         if (!node) return true;
-        // Only a tree the game itself would bend (0x1191078): p = [node+0x108]
+        // Only a tree the game itself would bend (0x139F5F8): p = [node+0x108]
         // ->vf(0x328)(), with p and byte p+0x18 set.
         using CanBend = uintptr_t(__fastcall*)(uintptr_t);
         const uintptr_t obj = *reinterpret_cast<const uintptr_t*>(node + 0x108);
@@ -2179,10 +2179,10 @@ bool bend_tree(uintptr_t base, uintptr_t copy, uintptr_t own, float copy_x, floa
         const auto vt = *reinterpret_cast<const uintptr_t* const*>(obj);
         const uintptr_t p = reinterpret_cast<CanBend>(vt[0x328 / 8])(obj);
         if (!p || *reinterpret_cast<const uint8_t*>(p + 0x18) == 0) return true;
-        const uintptr_t tree = reinterpret_cast<Tree>(base + 0x491AC0)(node);
+        const uintptr_t tree = reinterpret_cast<Tree>(base + 0x566360)(node);
         if (!tree) return true;
         alignas(16) uint8_t out[0x40] = {};
-        if (!reinterpret_cast<Point>(base + 0x5A4760)(comp, 0, out)) return true;
+        if (!reinterpret_cast<Point>(base + 0x68CC50)(comp, 0, out)) return true;
         float hx, hz;
         std::memcpy(&hx, out + 0x1C, 4);
         std::memcpy(&hz, out + 0x24, 4);
@@ -2190,7 +2190,7 @@ bool bend_tree(uintptr_t base, uintptr_t copy, uintptr_t own, float copy_x, floa
         const float len = std::sqrt(dir[0] * dir[0] + dir[2] * dir[2]);
         if (!(len > 0.01f) || !std::isfinite(len)) return true;
         dir[0] /= len, dir[2] /= len;
-        reinterpret_cast<Bend>(base + 0x349EA10)(tree, dir, strength);
+        reinterpret_cast<Bend>(base + 0x37E33D0)(tree, dir, strength);
         // The rope's flex, as the local pull leaves it (arbol-cuerda-4 R2): visual only.
         *reinterpret_cast<float*>(comp + 0x4E0) = strength;
         *reinterpret_cast<float*>(comp + 0x4E4) = kBendPerSecond;
@@ -2227,7 +2227,7 @@ bool clear_flex(uintptr_t copy) {
 
 // R1: the rope's effect state on both slots of the copy, on while its rope is
 // on a tree (type 0, phase 2-3), off otherwise; written only when it changes,
-// as 0x595FE0 does (no call: that one takes the actor's lock, we are inside
+// as 0x67EC30 does (no call: that one takes the actor's lock, we are inside
 // its update). False if it faulted.
 bool rope_effect(uintptr_t copy, bool hooked) {
     __try {
@@ -2251,12 +2251,12 @@ bool rope_effect(uintptr_t copy, bool hooked) {
     }
 }
 
-// A node's world position: 0x26D3940(node, &xf) fills an xf (+0x1C position,
+// A node's world position: 0x29658F0(node, &xf) fills an xf (+0x1C position,
 // +0x28/+0x2A int16 sectors of 1000 m on x/z).
 bool node_world(uintptr_t base, uintptr_t node, float out[3]) {
     using Get = void*(__fastcall*)(uintptr_t, void*);
     alignas(16) uint8_t xf[0x30] = {};
-    reinterpret_cast<Get>(base + 0x26D3940)(node, xf);
+    reinterpret_cast<Get>(base + 0x29658F0)(node, xf);
     float p[3];
     int16_t sx, sz;
     std::memcpy(p, xf + 0x1C, sizeof p);
@@ -2289,7 +2289,7 @@ bool rope_end(uintptr_t comp, uint8_t slot) {
         alignas(16) uint8_t xf[0x30] = {};
         const float unit[7] = {1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
         std::memcpy(xf, unit, sizeof unit);
-        if (!reinterpret_cast<Target>(base + 0x5A40E0)(comp, 0, xf)) return true;
+        if (!reinterpret_cast<Target>(base + 0x68C5D0)(comp, 0, xf)) return true;
         float t[3], b[3];
         std::memcpy(t, xf + 0x1C, sizeof t);
         if (node_world(base, o - 0x28, b)) {
@@ -2299,8 +2299,8 @@ bool rope_end(uintptr_t comp, uint8_t slot) {
         }
         if (!is_copy) return true;  // ours: measured only
         std::memset(xf + 0x28, 0, 4);
-        reinterpret_cast<Split>(base + 0x50EA00)(xf);
-        reinterpret_cast<SetWorld>(base + 0x26D4B40)(o - 0x28, xf, 0, 1);
+        reinterpret_cast<Split>(base + 0x5F0EF0)(xf);
+        reinterpret_cast<SetWorld>(base + 0x2966AF0)(o - 0x28, xf, 0, 1);
         g_rope_end_sets.fetch_add(1, std::memory_order_relaxed);
         return true;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -2376,22 +2376,22 @@ bool puppet_install_rope_bend() {
     const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
     static const uint8_t kHead[] = {0x48, 0x8B, 0x8E, 0xC8, 0x00, 0x00, 0x00, 0xE8};  // mov rcx,[rsi+0xC8]; call
     uint8_t head[sizeof kHead];
-    if (base != off::kImageBase || !game::safe_read(base + 0x86A576, head, sizeof head) ||
+    if (base != off::kImageBase || !game::safe_read(base + 0x97D970, head, sizeof head) ||
         std::memcmp(head, kHead, sizeof head) != 0) {
         log::warn("Puppet: actor update not recognised; the tree will not bend for the other player");
         return false;
     }
-    g_bend_hook = safetyhook::create_mid(reinterpret_cast<void*>(base + 0x86A576), on_actor_update);
+    g_bend_hook = safetyhook::create_mid(reinterpret_cast<void*>(base + 0x97D970), on_actor_update);
     g_rope_bend = static_cast<bool>(g_bend_hook);
     g_rope_effect = g_rope_bend.load();
     log::info("Puppet: tree bend and rope effect for the other player's rope {}",
               g_rope_bend ? "installed" : "FAILED to install");
-    // R5 (arbol-cuerda-5.md): movzx r8d,sil; vmovaps xmm1,xmm6; mov rcx,rdi; call 0x5AEAA0.
+    // R5 (arbol-cuerda-5.md): movzx r8d,sil; vmovaps xmm1,xmm6; mov rcx,rdi; call 0x696510.
     static const uint8_t kSlotTick[] = {0x44, 0x0F, 0xB6, 0xC6, 0xC5, 0xF8, 0x28, 0xCE, 0x48, 0x8B, 0xCF, 0xE8};
     uint8_t at[sizeof kSlotTick];
-    if (g_rope_bend && !g_rope_end_hook && game::safe_read(base + 0x59D89A, at, sizeof at) &&
+    if (g_rope_bend && !g_rope_end_hook && game::safe_read(base + 0x685DC2, at, sizeof at) &&
         std::memcmp(at, kSlotTick, sizeof at) == 0) {
-        g_rope_end_hook = safetyhook::create_mid(reinterpret_cast<void*>(base + 0x59D89A), on_rope_slot_tick);
+        g_rope_end_hook = safetyhook::create_mid(reinterpret_cast<void*>(base + 0x685DC2), on_rope_slot_tick);
         g_rope_end = static_cast<bool>(g_rope_end_hook);
     }
     log::info("Puppet: the other player's rope end on the tree: {}", g_rope_end ? "installed" : "NOT installed");

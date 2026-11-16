@@ -25,7 +25,7 @@ struct FieldTime {
     static constexpr size_t kMemSize = 32;   // in the game's memory (pad byte at +0x15)
     static constexpr size_t kWireSize = 31;  // serialized (no pad)
 
-    // toRaw 0x20D3460.
+    // toRaw 0x2307770.
     uint64_t to_raw() const {
         const uint64_t t = ((static_cast<uint64_t>(hour) * 60 + minute) * 60 + second) * 1000 + ms;
         const uint64_t base = static_cast<uint64_t>(day) * kRawDay;
@@ -34,7 +34,7 @@ struct FieldTime {
         return base + (t + 64'800'000) / 2;
     }
 
-    // fromRaw 0x20D3360: sets the date and time, leaves scale and anchor.
+    // fromRaw 0x2307670: sets the date and time, leaves scale and anchor.
     void set_raw(uint64_t raw) {
         const uint64_t d = raw / kRawDay;
         const uint64_t r = raw - d * kRawDay;
@@ -47,7 +47,7 @@ struct FieldTime {
         hour = static_cast<uint32_t>(t / 3'600'000 % 24);
     }
 
-    // GetCurrentFieldTime 0x20E55A0, as raw: the stored value carried forward to `now`.
+    // GetCurrentFieldTime 0x231A180, as raw: the stored value carried forward to `now`.
     uint64_t raw_at(uint64_t now) const { return to_raw() + (now > anchor ? (now - anchor) * scale : 0); }
 
     static std::optional<FieldTime> from_memory(const uint8_t* p) {

@@ -1,7 +1,7 @@
 #pragma once
 // Reads the game camera (read-only) and projects world positions to screen
 // pixels. Layout from CrimsonDesertTelemetry + live checks with cdmp_probe:
-//   camera  = [exe+0x6C8CF30] (vtable exe+0x5D20718)
+//   camera  = [exe+0x71602A8] (vtable exe+0x6169B58)
 //   block   = [camera+0x428]  (sanity: block+0xAC0 == 6360000.0f)
 //   block+0x80 position, +0x90 forward, +0x3E0 view 4x4, +0x4E0 projection 4x4
 
