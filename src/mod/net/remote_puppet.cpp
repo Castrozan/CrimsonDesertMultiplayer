@@ -1096,7 +1096,7 @@ bool puppet_spawn(const proto::SpawnInfo& info) {
         g_horse_spawned = false;
     }
 
-    // Both packets carry the world position (3 floats) 154 bytes before the
+    // Both packets carry the world position (3 floats) 157 bytes before the
     // end. Changing only the body's copy had no effect in game (the copy kept
     // appearing at the load spot), so write both.
     // At user +0x17 and +0x43; the body embeds a copy of the user record

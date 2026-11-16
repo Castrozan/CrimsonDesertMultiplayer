@@ -364,7 +364,7 @@ std::optional<SpawnInfo> decode_spawn(std::span<const uint8_t> bytes) {
     const uint32_t nh = r.u32();
     if (nh > 0xFFFF) return std::nullopt;
     info.horse = r.bytes(nh);
-    // Loads carry a Transform 154 bytes before their end; anything shorter is not one.
+    // Loads carry a Transform 157 bytes before their end; anything shorter is not one.
     if (!r.ok() || !r.at_end() || info.user.size() < 256 || info.body.size() < 256 ||
         (!info.horse.empty() && info.horse.size() < 256)) {
         return std::nullopt;

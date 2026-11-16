@@ -236,7 +236,7 @@ inline constexpr uintptr_t kServerDockingWriter = 0x2C43BF0;
 inline constexpr uint8_t kServerDockingWriterHead[] = {0x48, 0x89, 0x5C, 0x24, 0x08, 0x55, 0x56, 0x57,
                                                        0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57};
 // ActorLoadDataAck: Transform at the end (position, rotation quaternion, scale).
-inline constexpr size_t kLoadRotationFromEnd = 142;
+inline constexpr size_t kLoadRotationFromEnd = 145;
 
 // Ledge climb-up ("WallUp") path of a character, which a remote copy needs to
 // place its climb-up animation (broadcast-servidor-movimiento.md §10).
@@ -289,7 +289,7 @@ inline constexpr uint32_t kMethod_Actor = 0x20;       // movement method -> its 
 inline constexpr uint32_t kActor_OwnerUser = 0x90;    // u32 owning user key (0 = none)
 // ActorLoadDataAck (both the user-owned player actor and its world body):
 // world position (3 floats) sits this many bytes before the end of the payload.
-inline constexpr size_t kLoadPositionFromEnd = 154;
+inline constexpr size_t kLoadPositionFromEnd = 157;
 
 // While a save loads the actor sits at (0, 1000, 0) before being placed.
 inline constexpr float kLoadingParkHeight = 1000.0f;
