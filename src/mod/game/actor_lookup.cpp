@@ -18,6 +18,7 @@ constexpr uint32_t kTable_Buckets = 0x98;
 constexpr uint32_t kTable_Nodes = 0xA0;
 constexpr uint32_t kBucketStride = 0x100;
 constexpr uint32_t kBucketMaxEntries = (kBucketStride - 8) / 8;
+constexpr uint32_t kMaxScannedBuckets = 1u << 16;
 constexpr uint32_t kNode_Key = 0x04;
 constexpr uint32_t kNode_Actor = 0x08;
 // TransformSync component and its world position.
@@ -58,6 +59,28 @@ std::optional<uintptr_t> find_actor(uint32_t key) {
         return read_ptr(*node + kNode_Actor);
     }
     return std::nullopt;
+}
+
+std::vector<uint32_t> actor_keys() {
+    std::vector<uint32_t> keys;
+    static const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    if (base != off::kImageBase) return keys;
+    auto world = read_ptr(base + off::kWorldSystemSlot);
+    auto manager = world ? read_ptr(*world + off::kWorldSystem_ActorManager) : std::nullopt;
+    auto table = manager ? read_ptr(*manager + kManager_Table) : std::nullopt;
+    if (!table) return keys;
+    auto buckets = read<uint32_t>(*table + kTable_BucketCount);
+    auto bucket_base = read_ptr(*table + kTable_Buckets);
+    if (!buckets || !bucket_base || *buckets == 0 || *buckets > kMaxScannedBuckets) return keys;
+    for (uint32_t index = 0; index < *buckets; ++index) {
+        const uintptr_t bucket = *bucket_base + static_cast<uintptr_t>(index) * kBucketStride;
+        auto count = read<uint32_t>(bucket);
+        if (!count) return keys;
+        for (uint32_t entry = 0; entry < *count && entry < kBucketMaxEntries; ++entry) {
+            if (auto key = read<uint32_t>(bucket + 8 + entry * 8)) keys.push_back(*key);
+        }
+    }
+    return keys;
 }
 
 std::optional<proto::Vec3> actor_world_position(uint32_t key) {

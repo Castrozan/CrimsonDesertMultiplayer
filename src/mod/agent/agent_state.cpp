@@ -32,6 +32,16 @@ std::string camera_json(const CameraView& camera) {
                        vector(camera.forward), vector(camera.right));
 }
 
+std::string actors_json(const std::vector<ActorView>& actors) {
+    std::string joined;
+    for (const ActorView& actor : actors) {
+        if (!joined.empty()) joined += ',';
+        joined += std::format(R"({{"key":"0x{:08X}","kind":"{}","position":{},"distance":{}}})", actor.key,
+                              actor.kind, vector(actor.position), number(actor.distance));
+    }
+    return "[" + joined + "]";
+}
+
 }  // namespace
 
 std::string escape_json(std::string_view text) {
@@ -53,10 +63,11 @@ std::string escape_json(std::string_view text) {
 
 std::string to_json(const AgentState& state) {
     return std::format(
-        R"({{"sequence":{},"uptime_ms":{},"in_world":{},"player":{},"player_status":"{}","camera":{},"camera_status":"{}"}})",
+        R"({{"sequence":{},"uptime_ms":{},"in_world":{},"player":{},"player_status":"{}","camera":{},"camera_status":"{}","velocity":{},"actors":{}}})",
         state.sequence, state.uptime_ms, state.player ? "true" : "false",
         state.player ? player_json(*state.player) : "null", escape_json(state.player_status),
-        state.camera ? camera_json(*state.camera) : "null", escape_json(state.camera_status));
+        state.camera ? camera_json(*state.camera) : "null", escape_json(state.camera_status),
+        state.velocity ? vector(*state.velocity) : "null", actors_json(state.actors));
 }
 
 }  // namespace cdmp::agent

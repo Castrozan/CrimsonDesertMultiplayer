@@ -6,12 +6,15 @@
 
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 #include "common/protocol.h"
 
 namespace cdmp::game {
 
 std::optional<uintptr_t> find_actor(uint32_t key);
+
+std::vector<uint32_t> actor_keys();
 
 // World position of the actor's TransformSync (what is drawn), Y up.
 std::optional<proto::Vec3> actor_world_position(uint32_t key);

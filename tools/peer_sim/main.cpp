@@ -30,6 +30,8 @@
 #include "common/protocol.h"
 #include "common/udp.h"
 
+#include "agent_body.h"
+
 using namespace cdmp;
 
 namespace {
@@ -44,11 +46,12 @@ struct Options {
     bool public_bind = false;
     bool quiet = false;
     int seconds = 0;  // 0 = run until Ctrl+C
+    uint16_t control_port = 37021;
 };
 
 void usage() {
     std::printf(
-        "Usage: cdmp_peer [--port N] [--mode relay|ghost|bot] [--delay MS] [--offset M]\n"
+        "Usage: cdmp_peer [--port N] [--mode relay|ghost|bot|agent] [--control N] [--delay MS] [--offset M]\n"
         "                 [--loss PCT] [--jitter MS] [--public] [--quiet] [--seconds N]\n");
 }
 
@@ -62,6 +65,7 @@ std::optional<Options> parse(int argc, char** argv) {
         else if (a == "--quiet") o.quiet = true;
         else if ((a == "--port") && (v = next())) o.port = static_cast<uint16_t>(std::atoi(v));
         else if ((a == "--mode") && (v = next())) o.mode = v;
+        else if ((a == "--control") && (v = next())) o.control_port = static_cast<uint16_t>(std::atoi(v));
         else if ((a == "--delay") && (v = next())) o.delay_ms = std::atoi(v);
         else if ((a == "--offset") && (v = next())) o.offset_m = static_cast<float>(std::atof(v));
         else if ((a == "--loss") && (v = next())) o.loss_pct = std::atoi(v);
@@ -72,7 +76,7 @@ std::optional<Options> parse(int argc, char** argv) {
             return std::nullopt;
         }
     }
-    if (o.mode != "relay" && o.mode != "ghost" && o.mode != "bot") {
+    if (o.mode != "relay" && o.mode != "ghost" && o.mode != "bot" && o.mode != "agent") {
         usage();
         return std::nullopt;
     }
@@ -88,6 +92,7 @@ BOOL WINAPI on_ctrl(DWORD) {
 
 constexpr size_t kMaxClients = 2;
 constexpr uint32_t kClientTimeoutMs = 5000;
+constexpr uint32_t kAgentBodySendIntervalMs = 40;
 
 class Peer {
 public:
@@ -103,6 +108,14 @@ public:
                     "jitter %d ms)\n",
                     opt_.public_bind ? "0.0.0.0" : "127.0.0.1", opt_.port, opt_.mode.c_str(),
                     opt_.delay_ms, opt_.offset_m, opt_.loss_pct, opt_.jitter_ms);
+        if (opt_.mode == "agent") {
+            if (!control_.open(opt_.control_port, true)) {
+                std::printf("Cannot bind control UDP port %u: %s\n", opt_.control_port,
+                            net::UdpSocket::last_error().c_str());
+                return false;
+            }
+            std::printf("agent body control on 127.0.0.1:%u (UDP, one command per datagram)\n", opt_.control_port);
+        }
         return true;
     }
 
@@ -119,6 +132,7 @@ public:
             const uint32_t now = now_ms();
             flush_outbox(now);
 
+            if (opt_.mode == "agent") drive_agent_body(now);
             if (opt_.mode == "bot" && !clients_.empty() && now - last_bot >= 50) {
                 last_bot = now;
                 send_bot_state(clients_.front());
@@ -211,11 +225,22 @@ private:
             announce();
         } else if (auto* state = std::get_if<proto::PlayerState>(&packet->body)) {
             c->state = *state;
+            if (opt_.mode == "agent") {
+                body_.observe_player_state(*state);
+                return;
+            }
             if (opt_.mode == "bot") return;
             const Client& to = opt_.mode == "relay" ? partner_of(*c) : *c;
             proto::PlayerState out = *state;
             if (to.ep == c->ep) out.pos.x += opt_.offset_m;  // echo: keep the marker visible
             send(to.ep, out, opt_.delay_ms);
+        } else if (opt_.mode == "agent") {
+            if (auto* event = std::get_if<proto::GameEvent>(&packet->body)) {
+                ++c->events;
+                if (event->kind == proto::EventKind::Move) body_.observe_player_move(event->payload, now_ms());
+                return;
+            }
+            send(c->ep, std::move(packet->body), opt_.delay_ms);
         } else if (opt_.mode == "relay") {
             // Game events and reliable fragments/acks: forwarded unchanged.
             if (std::holds_alternative<proto::GameEvent>(packet->body)) ++c->events;
@@ -231,8 +256,24 @@ private:
         for (const auto& c : clients_) {
             const Client& other = partner_of(c);
             const bool alone = opt_.mode != "relay" || other.ep == c.ep;
-            send(c.ep, proto::Welcome{alone ? "cdmp_peer (" + opt_.mode + ")" : other.name});
+            const std::string stand_in = opt_.mode == "agent" ? "agent peer" : "cdmp_peer (" + opt_.mode + ")";
+            send(c.ep, proto::Welcome{alone ? stand_in : other.name});
         }
+    }
+
+    void drive_agent_body(uint32_t now) {
+        std::vector<uint8_t> command(512);
+        net::Endpoint controller;
+        if (auto size = control_.recv_from(controller, command, 0)) {
+            const std::string reply = body_.command({reinterpret_cast<const char*>(command.data()), *size});
+            control_.send_to(controller, {reinterpret_cast<const uint8_t*>(reply.data()), reply.size()});
+        }
+        body_.advance(now);
+        if (clients_.empty() || now - last_body_send_ms_ < kAgentBodySendIntervalMs) return;
+        last_body_send_ms_ = now;
+        const net::Endpoint to = clients_.front().ep;
+        if (auto state = body_.state()) send(to, *state);
+        if (auto move = body_.move_request(now)) send(to, proto::GameEvent{proto::EventKind::Move, std::move(*move)});
     }
 
     void send_bot_state(const Client& c) {
@@ -301,6 +342,9 @@ private:
 
     Options opt_;
     net::UdpSocket sock_;
+    net::UdpSocket control_;
+    peer::AgentBody body_;
+    uint32_t last_body_send_ms_ = 0;
     std::mt19937 rng_;
     std::vector<Client> clients_;
     std::deque<Pending> outbox_;

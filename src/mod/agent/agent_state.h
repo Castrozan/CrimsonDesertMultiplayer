@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "common/protocol.h"
 
@@ -25,6 +26,13 @@ struct CameraView {
     proto::Vec3 right;
 };
 
+struct ActorView {
+    uint32_t key = 0;
+    std::string_view kind;
+    proto::Vec3 position;
+    float distance = 0.0f;
+};
+
 struct AgentState {
     uint64_t sequence = 0;
     uint64_t uptime_ms = 0;
@@ -32,6 +40,8 @@ struct AgentState {
     std::string player_status;
     std::optional<CameraView> camera;
     std::string camera_status;
+    std::optional<proto::Vec3> velocity;
+    std::vector<ActorView> actors;
 };
 
 std::string to_json(const AgentState& state);

@@ -1336,7 +1336,7 @@ void test_agent_state_json() {
     const std::string outside_expected =
           R"json({"sequence":3,"uptime_ms":1500,"in_world":false,"player":null,)json"
           R"json("player_status":"no controlled actor (not in world)","camera":null,)json"
-          R"json("camera_status":"camera \"missing\"\u000a"})json";
+          R"json("camera_status":"camera \"missing\"\u000a","velocity":null,"actors":[]})json";
     CHECK(agent::to_json(outside) == outside_expected);
 
     agent::AgentState inside;
@@ -1347,12 +1347,15 @@ void test_agent_state_json() {
     inside.player_status = "in world";
     inside.camera = agent::CameraView{{1.0f, 2.0f, 3.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}};
     inside.camera_status = "ok";
+    inside.velocity = proto::Vec3{0.5f, 0.0f, -1.0f};
+    inside.actors.push_back(agent::ActorView{0xA010F001, "coop_copy", {4.0f, 5.0f, 6.0f}, 2.5f});
     const std::string inside_expected =
           R"json({"sequence":4,"uptime_ms":2000,"in_world":true,"player":{"position":[1.5000,-2.0000,3.2500],)json"
           R"json("rotation":[0.0000,0.5000,0.0000,0.5000],"health":100.0000,"health_max":120.0000,)json"
           R"json("stamina":null,"stamina_max":50.0000,"static_position_error":0.0100},"player_status":"in world",)json"
           R"json("camera":{"position":[1.0000,2.0000,3.0000],"forward":[0.0000,0.0000,1.0000],)json"
-          R"json("right":[1.0000,0.0000,0.0000]},"camera_status":"ok"})json";
+          R"json("right":[1.0000,0.0000,0.0000]},"camera_status":"ok","velocity":[0.5000,0.0000,-1.0000],)json"
+          R"json("actors":[{"key":"0xA010F001","kind":"coop_copy","position":[4.0000,5.0000,6.0000],"distance":2.5000}]})json";
     CHECK(agent::to_json(inside) == inside_expected);
 
     CHECK(agent::escape_json("tab\there\\") == "tab\\u0009here\\\\");

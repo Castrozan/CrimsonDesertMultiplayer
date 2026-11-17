@@ -129,7 +129,7 @@ set_target_properties(cdmp_mod PROPERTIES OUTPUT_NAME "cdmp" PREFIX "" SUFFIX ".
 target_link_options(cdmp_mod PRIVATE "/PDBALTPATH:cdmp.pdb")
 
 # Tools for single-PC development.
-add_executable(cdmp_peer tools/peer_sim/main.cpp)
+add_executable(cdmp_peer tools/peer_sim/main.cpp tools/peer_sim/agent_body.cpp)
 cdmp_strict(cdmp_peer)
 target_link_libraries(cdmp_peer PRIVATE cdmp_common)
 
