@@ -42,6 +42,7 @@ struct AgentState {
     std::string camera_status;
     std::optional<proto::Vec3> velocity;
     std::vector<ActorView> actors;
+    bool paused = false;
 };
 
 std::string to_json(const AgentState& state);

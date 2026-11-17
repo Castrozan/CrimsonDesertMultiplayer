@@ -63,11 +63,12 @@ std::string escape_json(std::string_view text) {
 
 std::string to_json(const AgentState& state) {
     return std::format(
-        R"({{"sequence":{},"uptime_ms":{},"in_world":{},"player":{},"player_status":"{}","camera":{},"camera_status":"{}","velocity":{},"actors":{}}})",
+        R"({{"sequence":{},"uptime_ms":{},"in_world":{},"player":{},"player_status":"{}","camera":{},"camera_status":"{}","velocity":{},"actors":{},"paused":{}}})",
         state.sequence, state.uptime_ms, state.player ? "true" : "false",
         state.player ? player_json(*state.player) : "null", escape_json(state.player_status),
         state.camera ? camera_json(*state.camera) : "null", escape_json(state.camera_status),
-        state.velocity ? vector(*state.velocity) : "null", actors_json(state.actors));
+        state.velocity ? vector(*state.velocity) : "null", actors_json(state.actors),
+        state.paused ? "true" : "false");
 }
 
 }  // namespace cdmp::agent

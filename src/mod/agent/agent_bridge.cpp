@@ -6,6 +6,7 @@
 #include "mod/agent/nearby_actors.h"
 #include "mod/game/camera_reader.h"
 #include "mod/game/player_reader.h"
+#include "mod/net/remote_puppet.h"
 
 namespace cdmp::agent {
 
@@ -30,6 +31,7 @@ public:
             state.camera_status = state.player_status;
             return state;
         }
+        state.paused = net::puppet_local_paused();
         if (auto snapshot = player_reader_.read()) {
             state.player = PlayerView{snapshot->position, snapshot->rotation, snapshot->health,
                                       snapshot->health_max, snapshot->stamina, snapshot->stamina_max,
