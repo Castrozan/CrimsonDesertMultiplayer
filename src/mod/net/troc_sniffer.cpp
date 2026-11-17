@@ -23,6 +23,7 @@
 #include "mod/log.h"
 #include "mod/game/game_errors.h"
 #include "mod/net/local_capture.h"
+#include "mod/puppet/visibility.h"
 #include "mod/net/loot_twin.h"
 #include "mod/net/native_suppress.h"
 #include "mod/net/remote_puppet.h"
@@ -308,6 +309,7 @@ void on_recv_packet(safetyhook::Context& ctx) {
             log::error("Inject: EXCEPTION while delivering opcode {}; injection disabled", op);
         }
     }
+    if (!loading) puppet::visibility_on_game_network_thread();
 
     // Phase 5 (native_suppress.h): a zone native's load is held, not
     // delivered. Only real packets (ours set t_injecting), and only while

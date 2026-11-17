@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cstdint>
-
 namespace cdmp::puppet {
 
-void visibility_tick(uint32_t puppet_key);
+void visibility_on_game_network_thread();
+
+void visibility_log_tick();
 
 }  // namespace cdmp::puppet

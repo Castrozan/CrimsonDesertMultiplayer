@@ -1936,7 +1936,7 @@ std::string rope_slot_text(uint32_t key) {
 
 void puppet_tick() {
     horse_diag_tick();
-    puppet::visibility_tick(kPuppetPlayer);
+    puppet::visibility_log_tick();
     {
         static uint64_t timing_at = 0;
         if (steady_ms() - timing_at >= 10000) {
