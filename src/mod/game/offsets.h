@@ -114,6 +114,7 @@ inline constexpr uint16_t kOpOtherUnequipItemAck = 2565;  // u32 key | u16 slot 
 inline constexpr size_t kMoveData_PathLocalPos = 0x00;
 inline constexpr size_t kMoveData_PathLocalQuat = 0x0C;
 inline constexpr size_t kMoveData_PathLocalScale = 0x1C;
+inline constexpr size_t kMoveData_Velocity = 0x28;
 inline constexpr size_t kMoveData_PathParent = 0x40;
 inline constexpr size_t kMoveData_PathWorldPos = 0x48;
 inline constexpr size_t kMoveData_PathWorldQuat = 0x54;
@@ -126,6 +127,7 @@ inline constexpr size_t kMoveData_Size = 0xDE;
 
 inline constexpr size_t kMoveActor_Data = 0x04;
 inline constexpr size_t kMoveActor_Tail = kMoveActor_Data + kMoveData_Size;
+inline constexpr size_t kMoveActor_TailSpeed = kMoveActor_Tail + 8;
 inline constexpr size_t kMoveActor_TailEnd = kMoveActor_Tail + 12;
 inline constexpr size_t kMoveActorReq_Size = kMoveActor_TailEnd + 10 * 28;
 inline constexpr size_t kMoveActorAck_Size = kMoveActor_TailEnd + 1;

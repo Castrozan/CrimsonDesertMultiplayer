@@ -17,6 +17,7 @@ constexpr size_t kPosition = off::kMoveActor_Data + off::kMoveData_Pos;
 constexpr size_t kRotation = off::kMoveActor_Data + off::kMoveData_Quat;
 constexpr size_t kTimestamp = off::kMoveActor_Data + off::kMoveData_Timestamp;
 constexpr size_t kPathLocalPosition = off::kMoveActor_Data + off::kMoveData_PathLocalPos;
+constexpr size_t kVelocity = off::kMoveActor_Data + off::kMoveData_Velocity;
 constexpr size_t kPathLocalRotation = off::kMoveActor_Data + off::kMoveData_PathLocalQuat;
 constexpr float kArrivalMetres = 0.15f;
 constexpr float kSpawnOffsetMetres = 3.0f;
@@ -29,8 +30,11 @@ constexpr const char* kHelp =
     R"("face YAW_DEGREES":"turn, 0 is +Z and 90 is +X","speed METRES_PER_SECOND":"walking speed",)"
     R"("ground player|fixed":"height follows the player's or stays where teleport put it"}})";
 
-proto::Quat yaw_quaternion(float yaw_radians) {
-    return {0.0f, std::sin(yaw_radians * 0.5f), 0.0f, std::cos(yaw_radians * 0.5f)};
+constexpr float kGameYawOfHeadingZero = 3.14159265f;
+
+proto::Quat yaw_quaternion(float heading_radians) {
+    const float half_game_yaw = (heading_radians + kGameYawOfHeadingZero) * 0.5f;
+    return {0.0f, std::sin(half_game_yaw), 0.0f, std::cos(half_game_yaw)};
 }
 
 void write_vector(std::vector<uint8_t>& bytes, size_t offset, const proto::Vec3& value) {
@@ -85,6 +89,9 @@ std::optional<std::vector<uint8_t>> AgentBody::move_request(uint32_t now_ms) con
     write_vector(request, kPathLocalPosition, position_);
     write_quaternion(request, kRotation, rotation);
     write_quaternion(request, kPathLocalRotation, rotation);
+    const float speed = target_ ? speed_metres_per_second_ : 0.0f;
+    write_vector(request, kVelocity, {std::sin(yaw_radians_) * speed, 0.0f, std::cos(yaw_radians_) * speed});
+    std::memcpy(request.data() + off::kMoveActor_TailSpeed, &speed, sizeof speed);
     const uint64_t timestamp = template_timestamp_ + (now_ms - template_received_ms_);
     std::memcpy(request.data() + kTimestamp, &timestamp, sizeof timestamp);
     return request;

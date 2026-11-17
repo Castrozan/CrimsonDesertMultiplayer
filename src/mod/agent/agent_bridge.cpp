@@ -1,11 +1,9 @@
 #include "mod/agent/agent_bridge.h"
 
-#include <algorithm>
 #include <cmath>
 
-#include "common/keys.h"
 #include "mod/agent/agent_server.h"
-#include "mod/game/actor_lookup.h"
+#include "mod/agent/nearby_actors.h"
 #include "mod/game/camera_reader.h"
 #include "mod/game/player_reader.h"
 
@@ -13,32 +11,7 @@ namespace cdmp::agent {
 
 namespace {
 
-constexpr float kActorRadiusMetres = 60.0f;
-constexpr size_t kMaxActors = 16;
 constexpr uint64_t kMaxVelocityIntervalMs = 2000;
-
-bool is_character_key(uint32_t key) { return (key >> 24) == 0xA0 || (key >> 24) == 0xB0; }
-
-std::string_view actor_kind(uint32_t key) {
-    if (net::keys::is_mod_key(key)) return "coop_copy";
-    return (key >> 24) == 0xA0 ? "player" : "character";
-}
-
-std::vector<ActorView> actors_near(const proto::Vec3& centre) {
-    std::vector<ActorView> actors;
-    for (const uint32_t key : game::actor_keys()) {
-        if (!is_character_key(key)) continue;
-        const auto position = game::actor_world_position(key);
-        if (!position) continue;
-        const float distance = std::hypot(position->x - centre.x, position->y - centre.y, position->z - centre.z);
-        if (distance < 0.05f || distance > kActorRadiusMetres) continue;
-        actors.push_back(ActorView{key, actor_kind(key), *position, distance});
-    }
-    std::sort(actors.begin(), actors.end(),
-              [](const ActorView& a, const ActorView& b) { return a.distance < b.distance; });
-    if (actors.size() > kMaxActors) actors.resize(kMaxActors);
-    return actors;
-}
 
 class GameStateSource {
 public:
@@ -71,7 +44,7 @@ public:
             }
             last_position_ = snapshot->position;
             last_position_ms_ = now_ms;
-            state.actors = actors_near(snapshot->position);
+            state.actors = nearby_actors_.around(snapshot->position, now_ms);
         } else {
             state.player_status = player_reader_.last_failure();
         }
@@ -92,6 +65,7 @@ private:
     uint64_t last_position_ms_ = 0;
     game::PlayerReader player_reader_;
     game::CameraReader camera_reader_;
+    NearbyActors nearby_actors_;
 };
 
 }  // namespace

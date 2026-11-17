@@ -119,6 +119,7 @@ add_library(cdmp_mod SHARED
     src/mod/agent/agent_state.cpp
     src/mod/agent/agent_server.cpp
     src/mod/agent/agent_bridge.cpp
+    src/mod/agent/nearby_actors.cpp
 )
 cdmp_strict(cdmp_mod)
 target_link_libraries(cdmp_mod PRIVATE cdmp_common imgui safetyhook::safetyhook)
