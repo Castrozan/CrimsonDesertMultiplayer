@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "crimson-desert": {
-      "type": "stdio",
-      "command": "scripts/agent-mcp-linux.sh",
-      "args": []
-    }
-  }
-}
