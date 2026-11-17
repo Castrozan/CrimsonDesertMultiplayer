@@ -15,6 +15,7 @@
 #include "mod/game/offsets.h"
 #include "mod/game/safe_memory.h"
 #include "mod/log.h"
+#include "mod/status/hide_flags.h"
 #include "mod/net/troc_sniffer.h"
 
 namespace cdmp::net {
@@ -50,11 +51,11 @@ bool is_enemy_copy(uint32_t key) { return (key & 0xFFFF0000u) == 0xB01F0000u && 
 // no icon) mixes AI, sequencer and map policies and was set for every copy
 // (7 Oct night: 397 of 397), so it cannot tell a hidden copy.
 // Status = [[actor+0x68]+0x20]: u8 +0x273 dead, u8 +0x340 no icon, u8 +0x341
-// map hide, u32 +0x390/+0x394 physical hide flags; model alpha =
+// map hide, u64 +0x3B8/+0x3C0 physical hide flags; model alpha =
 // f32 [[[actor+0x68]+0x40]+0xE8]+0x100; actor u16 +0x5E state, u8 +0xCF login.
 struct CopyState {
     bool valid = false, dead = false, no_icon = false, map_hide = false, ready = false;
-    uint32_t flags = 0;
+    uint64_t flags = 0;
     float alpha = NAN;  // NaN: no model readable
     // The minimap policy's own inputs (analisis-ia2/P1 §3.2), for the probe:
     int ai_bit = -1;     // bit 0x04000000 of u64 [[[comps+0x58]+0x60]+0x38]
@@ -71,7 +72,7 @@ CopyState read_copy_state(const void* comp) {
         s.dead = *reinterpret_cast<const uint8_t*>(status + 0x273) != 0;
         s.no_icon = *reinterpret_cast<const uint8_t*>(status + 0x340) != 0;
         s.map_hide = *reinterpret_cast<const uint8_t*>(status + 0x341) != 0;
-        s.flags = *reinterpret_cast<const uint32_t*>(status + 0x390) | *reinterpret_cast<const uint32_t*>(status + 0x394);
+        s.flags = status::build_3663::hide_flags(status) | status::build_3663::hide_flags_more(status);
         s.ready = *reinterpret_cast<const uint16_t*>(actor + 0x5E) == 0x10 && *reinterpret_cast<const uint8_t*>(actor + 0xCF) != 0;
         s.valid = true;
         const auto control = *reinterpret_cast<const uintptr_t*>(comps + 0x40);

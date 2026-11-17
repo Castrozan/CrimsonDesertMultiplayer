@@ -17,6 +17,7 @@
 #include "mod/game/offsets.h"
 #include "mod/game/safe_memory.h"
 #include "mod/log.h"
+#include "mod/status/hide_flags.h"
 #include "common/keys.h"
 #include "mod/net/local_capture.h"
 #include "mod/net/remote_puppet.h"
@@ -91,7 +92,7 @@ uint32_t key_of_actor(uintptr_t actor) {
 
 // The copy is rejected for its "driven by the network" mark (TS+0x3DC = 1,
 // live test 2026-10-04); its other states must still count: dead, hidden or
-// untouchable (Status +0x390/+0x394 flags, +0x340, +0x276; IsTargetable
+// untouchable (Status +0x3B8/+0x3C0 flags, +0x340, +0x276; IsTargetable
 // rules 1, 3, 9 and 11) are never overridden.
 bool copy_state_normal(uintptr_t actor) {
     __try {
@@ -101,7 +102,7 @@ bool copy_state_normal(uintptr_t actor) {
         if (!st) return false;
         // +0x273: dead (pieza4-dano-servidor.md §1.4). A dead copy must not stay a
         // target (pendiente-reaccion-muerte-invitado.md).
-        return (*reinterpret_cast<const uint32_t*>(st + 0x390) | *reinterpret_cast<const uint32_t*>(st + 0x394)) == 0 &&
+        return (status::build_3663::hide_flags(st) | status::build_3663::hide_flags_more(st)) == 0 &&
                *reinterpret_cast<const uint8_t*>(st + 0x340) == 0 && *reinterpret_cast<const uint8_t*>(st + 0x276) == 0 &&
                *reinterpret_cast<const uint8_t*>(st + 0x273) == 0;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -235,7 +236,7 @@ bool __fastcall is_targetable(void* comp, uintptr_t candidate, uint8_t mode) {
 struct Fields {
     uint8_t c2 = 0xEE, type = 0xEE, local = 0xEE;
     uint8_t s276 = 0xEE, s340 = 0xEE, s398 = 0xEE, ts3dc = 0xEE;
-    uint32_t s390 = 0xEEEEEEEE, s394 = 0xEEEEEEEE;
+    uint64_t hide_flags = 0xEEEEEEEE, hide_flags_more = 0xEEEEEEEE;
     uint32_t key = 0, owner = 0;
 };
 
@@ -253,8 +254,8 @@ bool read_fields(uintptr_t a, Fields& f) {
         if (st) {
             f.s276 = *reinterpret_cast<const uint8_t*>(st + 0x276);
             f.s340 = *reinterpret_cast<const uint8_t*>(st + 0x340);
-            f.s390 = *reinterpret_cast<const uint32_t*>(st + 0x390);
-            f.s394 = *reinterpret_cast<const uint32_t*>(st + 0x394);
+            f.hide_flags = status::build_3663::hide_flags(st);
+            f.hide_flags_more = status::build_3663::hide_flags_more(st);
             f.s398 = *reinterpret_cast<const uint8_t*>(st + 0x398);
         }
         const auto ts = *reinterpret_cast<const uintptr_t*>(comps + 0x1A0);
@@ -274,7 +275,7 @@ void log_fields(const char* who, uint32_t key) {
     }
     log::info("Aggro test: {} 0x{:08X}: type {} owner 0x{:08X} local(+96) {} +C2 {} | Status +276 {} +340 {} "
               "+390 0x{:X} +394 0x{:X} +398 {} | TS+3DC {}",
-              who, f.key, f.type, f.owner, f.local, f.c2, f.s276, f.s340, f.s390, f.s394, f.s398, f.ts3dc);
+              who, f.key, f.type, f.owner, f.local, f.c2, f.s276, f.s340, f.hide_flags, f.hide_flags_more, f.s398, f.ts3dc);
 }
 
 // Dev "bait" (aggro_set_bait): our enemies that pick our own player pick the

@@ -17,6 +17,7 @@
 #include "common/keys.h"
 #include "mod/game/actor_lookup.h"
 #include "mod/game/offsets.h"
+#include "mod/status/hide_flags.h"
 #include "mod/log.h"
 #include "mod/net/local_capture.h"
 #include "mod/net/loot_twin.h"
@@ -185,7 +186,7 @@ std::map<uint32_t, uint64_t> g_report_due;  // copy key -> when to log where it 
 uint64_t now_ms() { return GetTickCount64(); }
 
 struct Seen {
-    uint32_t s390 = 0, s394 = 0;
+    uint64_t hide_flags = 0, hide_flags_more = 0;
     uint8_t s340 = 0, ts3dc = 0, login = 0;
     uint16_t state = 0;
 };
@@ -198,8 +199,8 @@ bool read_seen(uintptr_t a, Seen& f) {
         if (!comps) return true;
         const auto st = *reinterpret_cast<const uintptr_t*>(comps + 0x20);
         if (st) {
-            f.s390 = *reinterpret_cast<const uint32_t*>(st + 0x390);
-            f.s394 = *reinterpret_cast<const uint32_t*>(st + 0x394);
+            f.hide_flags = status::build_3663::hide_flags(st);
+            f.hide_flags_more = status::build_3663::hide_flags_more(st);
             f.s340 = *reinterpret_cast<const uint8_t*>(st + 0x340);
         }
         const auto ts = *reinterpret_cast<const uintptr_t*>(comps + 0x1A0);
@@ -221,12 +222,12 @@ void report(uint32_t copy) {
     Seen f;
     read_seen(*a, f);
     log::info("Enemy relay: copy 0x{:08X} exists: at ({:.1f}, {:.1f}, {:.1f}), {:.1f} m from you | state +5E 0x{:X} "
-              "login +CF {} | Status +390 0x{:X} +394 0x{:X} +340 {} | TS+3DC {}",
+              "login +CF {} | Status +3B8 0x{:X} +3C0 0x{:X} +340 {} | TS+3DC {}",
               copy, p ? p->x : NAN, p ? p->y : NAN, p ? p->z : NAN,
               p && me ? std::sqrt((p->x - me->x) * (p->x - me->x) + (p->y - me->y) * (p->y - me->y) +
                                   (p->z - me->z) * (p->z - me->z))
                       : NAN,
-              f.state, f.login, f.s390, f.s394, f.s340, f.ts3dc);
+              f.state, f.login, f.hide_flags, f.hide_flags_more, f.s340, f.ts3dc);
 }
 
 float distance(const proto::Vec3& a, const proto::Vec3& b) {
@@ -327,7 +328,7 @@ int strip_spawn_identity(Bytes& load) {
 // very end, its parent (+0xAC, the camp leader) and children (+0xB0, a
 // leader's members). A copy kept them: a member copy joined the real party
 // and never finished logging in; a LEADER copy logged in with the real
-// members as its children, which set Status+0x390 bit 2 on them (model alpha
+// members as its children, which set Status+0x3B8 bit 2 on them (model alpha
 // 0) for good: the invisible originals of the live tests. The copy becomes a
 // solo enemy instead.
 
@@ -1242,9 +1243,9 @@ void enemy_observe_c2s(const uint8_t* packet, size_t size) {
 }
 
 // Test aid (copias-grupo-invisibles.md §6.8): every 2 s, our real type-3
-// actors within 60 m whose Status+0x390 has bit 2 (the flag that hid the
+// actors within 60 m whose Status+0x3B8 has bit 2 (the flag that hid the
 // originals: model alpha 0) are logged when they get or lose it.
-std::map<uint32_t, uint32_t> g_hidden_seen;  // key -> its +0x390 when logged
+std::map<uint32_t, uint64_t> g_hidden_seen;  // key -> its +0x3B8 when logged
 
 void watch_hidden() {
     const auto me = my_position();
@@ -1265,17 +1266,17 @@ void watch_hidden() {
         if (!a || !pos || distance(*pos, *me) > 60.0f) continue;
         Seen f;
         if (!read_seen(*a, f)) continue;
-        const bool hidden = (f.s390 & 0x2) != 0;
+        const bool hidden = (f.hide_flags & status::build_3663::kHideFlag_LoginPending) != 0;
         hidden_now += hidden;
         auto it = g_hidden_seen.find(key);
-        const bool was = it != g_hidden_seen.end() && (it->second & 0x2);
+        const bool was = it != g_hidden_seen.end() && (it->second & status::build_3663::kHideFlag_LoginPending);
         if (hidden != was) {
-            log::info("Enemy relay: REAL enemy 0x{:08X} {} the hidden flag (Status+0x390 0x{:X}, +0x394 0x{:X}, "
+            log::info("Enemy relay: REAL enemy 0x{:08X} {} the hidden flag (Status+0x3B8 0x{:X}, +0x3C0 0x{:X}, "
                       "state +5E 0x{:X}){}",
-                      key, hidden ? "GOT" : "lost", f.s390, f.s394, f.state,
+                      key, hidden ? "GOT" : "lost", f.hide_flags, f.hide_flags_more, f.state,
                       with_copy.count(key) ? ", it has a copy" : "");
         }
-        g_hidden_seen[key] = f.s390;
+        g_hidden_seen[key] = f.hide_flags;
     }
     static int last_count = -1;
     if (hidden_now != last_count) {
